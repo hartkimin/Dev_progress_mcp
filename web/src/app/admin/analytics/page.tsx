@@ -1,11 +1,16 @@
-import { getGlobalAnalytics } from '@/lib/db';
+import { getGlobalAnalytics, listProjects } from '@/lib/db';
 import { BarChart, Briefcase, ListTodo, Users, CheckCircle, Clock, Activity, Target } from 'lucide-react';
 import Link from 'next/link';
+import ProjectFilter from './ProjectFilter';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AnalyticsPage() {
-    const stats = await getGlobalAnalytics();
+export default async function AnalyticsPage(props: { searchParams: Promise<{ projectId?: string }> }) {
+    const searchParams = await props.searchParams;
+    const projectId = searchParams?.projectId || '';
+
+    const stats = await getGlobalAnalytics(projectId || undefined);
+    const projects = await listProjects();
 
     const completionRate = stats.totalTasks > 0
         ? Math.round((stats.tasksByStatus.DONE / stats.totalTasks) * 100)
@@ -32,6 +37,11 @@ export default async function AnalyticsPage() {
                             <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">System Analytics</h1>
                             <p className="mt-1 text-slate-500">Overview of Dev Progress operations and performance metrics.</p>
                         </div>
+                    </div>
+
+                    {/* Project Filter Area */}
+                    <div className="mt-8">
+                        <ProjectFilter projects={projects.map(p => ({ id: p.id, name: p.name }))} currentProjectId={projectId} />
                     </div>
                 </header>
 

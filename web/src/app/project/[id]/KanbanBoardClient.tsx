@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Task } from '@/lib/db';
-import { X, Calendar, Tag, Hash, Activity, Clock, Loader2 } from 'lucide-react';
-import { setTaskStatus } from './actions';
+import { X, Calendar, Tag, Hash, Activity, Clock, Loader2, Edit2, Save, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { setTaskStatus, saveTaskDetails } from './actions';
+import { TaskComments } from './TaskComments';
 
 export default function KanbanBoardClient({
     tasks: initialTasks,
@@ -18,6 +19,9 @@ export default function KanbanBoardClient({
     const [tasks, setTasks] = useState<Task[]>(initialTasks);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [selectedTaskDetails, setSelectedTaskDetails] = useState<Task | null>(null);
+    const [isEditingDetails, setIsEditingDetails] = useState(false);
+    const [editForm, setEditForm] = useState({ description: '', beforeWork: '', afterWork: '' });
+    const [isSaving, setIsSaving] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [isPending, startTransition] = useTransition();
 
@@ -62,7 +66,7 @@ export default function KanbanBoardClient({
             <div className="flex flex-col gap-6 w-full">
                 {/* Category Progress Overview */}
                 {Object.keys(categoryStats).length > 0 && (
-                    <div className="mb-2">
+                    <div className="sticky top-0 z-40 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md pt-4 pb-4 -mt-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 mb-6 border-b border-slate-200 dark:border-slate-800 shadow-sm transition-all">
                         <div className="flex items-center justify-between mb-3">
                             <h2 className="text-sm font-semibold text-slate-800 dark:text-white flex items-center gap-2">
                                 <svg className="w-4 h-4 text-indigo-500 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -161,6 +165,12 @@ export default function KanbanBoardClient({
                                                                                     // Prevent clicking if just dragging
                                                                                     if (!snapshot.isDragging) {
                                                                                         setSelectedTaskDetails(task);
+                                                                                        setEditForm({
+                                                                                            description: task.description || '',
+                                                                                            beforeWork: task.before_work || '',
+                                                                                            afterWork: task.after_work || ''
+                                                                                        });
+                                                                                        setIsEditingDetails(false);
                                                                                     }
                                                                                 }}
                                                                                 className={`bg-white dark:bg-slate-800/90 border cursor-pointer ${isPulse && !snapshot.isDragging ? 'border-blue-400 dark:border-blue-500/70 ring-2 ring-blue-400/30 dark:ring-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.3)] dark:shadow-[0_0_15px_rgba(59,130,246,0.5)] animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]' : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 shadow-sm dark:shadow-none hover:shadow-md'} p-4 rounded-xl transition-all group duration-200 ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-xl ring-2 ring-indigo-500/50 z-[100]' : ''}`}
@@ -182,11 +192,18 @@ export default function KanbanBoardClient({
                                                                                     </p>
                                                                                 )}
                                                                                 <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-700/80 pt-3 mt-1">
-                                                                                    <span className="text-[10px] font-mono font-medium text-slate-500 dark:text-slate-500 bg-slate-100 dark:bg-slate-900/80 px-2 py-1 rounded cursor-text">
-                                                                                        #{task.id.slice(0, 6)}
-                                                                                    </span>
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className="text-[10px] font-mono font-medium text-slate-500 dark:text-slate-500 bg-slate-100 dark:bg-slate-900/80 px-2 py-1 rounded cursor-text">
+                                                                                            #{task.id.slice(0, 6)}
+                                                                                        </span>
+                                                                                        {task.comment_count ? (
+                                                                                            <span className="flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                                                                                <MessageSquare className="w-3 h-3" /> {task.comment_count}
+                                                                                            </span>
+                                                                                        ) : null}
+                                                                                    </div>
                                                                                     <span className="text-[11px] text-slate-500 font-medium">
-                                                                                        {new Date(task.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                                                        {new Date(task.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', timeZone: 'Asia/Seoul' })}
                                                                                     </span>
                                                                                 </div>
                                                                             </div>
@@ -228,36 +245,104 @@ export default function KanbanBoardClient({
                                             {selectedTaskDetails.category}
                                         </span>
                                     )}
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full text-xs font-bold tracking-wide border border-slate-200 dark:border-slate-700">
-                                        <Activity className="w-3.5 h-3.5" />
-                                        {columns.find(c => c.id === selectedTaskDetails.status)?.label}
-                                    </span>
+                                    <div className="relative group/status flex">
+                                        <select
+                                            value={selectedTaskDetails.status}
+                                            onChange={(e) => {
+                                                const newStatus = e.target.value as 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+                                                startTransition(() => {
+                                                    setTaskStatus(projectId, selectedTaskDetails.id, newStatus);
+                                                    setTasks(prev => prev.map(t => t.id === selectedTaskDetails.id ? { ...t, status: newStatus } : t));
+                                                    setSelectedTaskDetails({ ...selectedTaskDetails, status: newStatus });
+                                                });
+                                            }}
+                                            className="appearance-none inline-flex items-center gap-1.5 pl-8 pr-6 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full text-xs font-bold tracking-wide border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                        >
+                                            {columns.map(c => (
+                                                <option key={c.id} value={c.id}>{c.label}</option>
+                                            ))}
+                                        </select>
+                                        <Activity className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                                    </div>
                                 </div>
                                 <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight">
                                     {selectedTaskDetails.title}
                                 </h2>
                             </div>
-                            <button
-                                onClick={() => setSelectedTaskDetails(null)}
-                                className="p-2 -m-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 outline-none focus:ring-2 focus:ring-indigo-500"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setSelectedTaskDetails(null)}
+                                    className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Body */}
                         <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar bg-slate-50/50 dark:bg-slate-950/30">
-                            <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300">
-                                {selectedTaskDetails.description ? (
-                                    <p className="whitespace-pre-wrap leading-relaxed text-[15px]">{selectedTaskDetails.description}</p>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-slate-500 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-                                        <svg className="w-12 h-12 mb-3 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                        <p className="italic font-medium">No description provided for this task.</p>
+                            <div className="flex flex-col gap-6">
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex justify-between items-center">
+                                        Description (주요 흐름)
+                                        <span className="text-xs font-normal text-slate-500 font-mono">Markdown supported</span>
+                                    </label>
+                                    <textarea
+                                        value={editForm.description}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                                        className="w-full min-h-[120px] p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-[15px] leading-relaxed"
+                                        placeholder="Overview of the task..."
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-sm font-bold text-amber-600 dark:text-amber-400">Work Content (작업 내용)</label>
+                                        <textarea
+                                            value={editForm.beforeWork}
+                                            onChange={(e) => setEditForm(prev => ({ ...prev, beforeWork: e.target.value }))}
+                                            className="w-full min-h-[160px] p-3 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-900/10 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-amber-500 outline-none text-[14px] leading-relaxed"
+                                            placeholder="What work is being done or state before work..."
+                                        />
                                     </div>
-                                )}
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-sm font-bold text-emerald-600 dark:text-emerald-400">After Work Content (작업 후 내용)</label>
+                                        <textarea
+                                            value={editForm.afterWork}
+                                            onChange={(e) => setEditForm(prev => ({ ...prev, afterWork: e.target.value }))}
+                                            className="w-full min-h-[160px] p-3 rounded-lg border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-900/10 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none text-[14px] leading-relaxed"
+                                            placeholder="What was achieved, fixed, or modified..."
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
+                                    <div className="flex gap-3">
+                                        <button
+                                            className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm disabled:opacity-50"
+                                            onClick={async () => {
+                                                setIsSaving(true);
+                                                await saveTaskDetails(projectId, selectedTaskDetails.id, editForm.description, editForm.beforeWork, editForm.afterWork);
+                                                setSelectedTaskDetails({
+                                                    ...selectedTaskDetails,
+                                                    description: editForm.description,
+                                                    before_work: editForm.beforeWork,
+                                                    after_work: editForm.afterWork
+                                                });
+                                                setTasks(prev => prev.map(t => t.id === selectedTaskDetails.id ? {
+                                                    ...t,
+                                                    description: editForm.description,
+                                                    before_work: editForm.beforeWork,
+                                                    after_work: editForm.afterWork
+                                                } : t));
+                                                setIsSaving(false);
+                                            }}
+                                            disabled={isSaving}
+                                        >
+                                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                            Save Details
+                                        </button>
+                                    </div>
+                                </div>
+                                <TaskComments taskId={selectedTaskDetails.id} />
                             </div>
                         </div>
 
@@ -267,11 +352,23 @@ export default function KanbanBoardClient({
                                 <Hash className="w-3.5 h-3.5 text-indigo-400" />
                                 {selectedTaskDetails.id}
                             </div>
-                            <div className="flex flex-wrap gap-4">
+                            <div className="flex flex-wrap items-center gap-4">
                                 <div className="flex items-center gap-2">
                                     <Calendar className="w-4 h-4 text-slate-400" />
-                                    <span>{new Date(selectedTaskDetails.created_at).toLocaleString()}</span>
+                                    <span>Created {new Date(selectedTaskDetails.created_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</span>
                                 </div>
+                                {selectedTaskDetails.started_at && (
+                                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-medium bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-900/50">
+                                        <Clock className="w-4 h-4" />
+                                        <span>Started {new Date(selectedTaskDetails.started_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</span>
+                                    </div>
+                                )}
+                                {selectedTaskDetails.completed_at && (
+                                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-900/50">
+                                        <CheckCircle2 className="w-4 h-4" />
+                                        <span>Done {new Date(selectedTaskDetails.completed_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

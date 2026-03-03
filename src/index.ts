@@ -104,6 +104,32 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 },
             },
             {
+                name: "update_task_details",
+                description: "Update the detailed description, before work, and after work content of a task.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        taskId: {
+                            type: "string",
+                            description: "The ID of the task.",
+                        },
+                        description: {
+                            type: "string",
+                            description: "The main description or flow of the task.",
+                        },
+                        beforeWork: {
+                            type: "string",
+                            description: "Work Content (작업 내용). What the state or context was before the work started or what work is currently being done.",
+                        },
+                        afterWork: {
+                            type: "string",
+                            description: "After Work Content (작업 후 내용). The outcome or results after the work is completed.",
+                        },
+                    },
+                    required: ["taskId"],
+                },
+            },
+            {
                 name: "get_kanban_board",
                 description: "Retrieve the current Kanban board layout for a specific project.",
                 inputSchema: {
@@ -165,6 +191,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 };
             }
 
+            case "update_task_details": {
+                const { taskId, description = "", beforeWork = "", afterWork = "" } = args as Record<string, any>;
+                const updated = await db.updateTaskDetails(taskId, description, beforeWork, afterWork);
+                if (!updated) {
+                    throw new McpError(ErrorCode.InvalidParams, `Task with ID ${taskId} not found or update failed.`);
+                }
+                return {
+                    content: [{ type: "text", text: `Task ${taskId} details updated successfully.` }],
+                };
+            }
+
             case "get_kanban_board": {
                 const { projectId } = args as Record<string, string>;
                 const project = await db.getProjectById(projectId);
@@ -201,6 +238,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                             for (const t of statusTasks) {
                                 boardMd += `- [${t.id.slice(0, 8)}] **${t.title}**\n`;
                                 if (t.description) boardMd += `  > ${t.description.split('\n').join('\n  > ')}\n`;
+                                if (t.comment_count && t.comment_count > 0) boardMd += `  💬 ${t.comment_count} comment(s)\n`;
                             }
                         }
                     }

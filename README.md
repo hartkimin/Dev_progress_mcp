@@ -9,8 +9,21 @@ This project aims to help developers track their tasks, manage projects, and vis
 - **Project Management**: Create and manage multiple projects.
 - **Task Tracking**: Add tasks to projects, categorize them, and track their status (TODO, IN_PROGRESS, REVIEW, DONE).
 - **Kanban Board Visualization**: Easily retrieve a Markdown-formatted Kanban board for any project.
-- **Web Dashboard**: Included Next.js dashboard located in the `web/` directory for visual management.
+- **Web Dashboard**: Included Next.js frontend with Timeline views, Analytics, and Integrations management.
 - **Secure Authentication**: Requires an API key (`DP_API_KEY`) to ensure only authorized clients can access the MCP server.
+
+## Usage Overview
+
+### Dashboard Overview
+The web dashboard provides a clean overview of all your projects and their current progress.
+![Dashboard Overview](./assets/dashboard_overview.png)
+
+### Kanban Board & Task Details
+Manage tasks seamlessly with a visual Kanban board, timeline views, and detailed analytics.
+![Kanban Board](./assets/kanban_board.png)
+
+### Video Demonstration
+![Dashboard Demo](./assets/dashboard_demo.webp)
 
 ## Installation
 

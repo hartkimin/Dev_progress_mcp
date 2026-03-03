@@ -13,6 +13,7 @@ import {
     UserCircle2,
     BarChart3
 } from 'lucide-react';
+import SidebarTimeline from './SidebarTimeline';
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -28,6 +29,9 @@ export default function Sidebar() {
         { name: 'Integrations', href: '/admin/integrations', icon: Blocks },
         { name: 'Users', href: '/admin/users', icon: Users },
     ];
+
+    const projectIdMatch = pathname.match(/^\/project\/([^\/]+)/);
+    const projectId = projectIdMatch ? projectIdMatch[1] : null;
 
     return (
         <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-300 flex flex-col hidden md:flex h-full shadow-sm z-20 transition-all duration-300`}>
@@ -48,7 +52,7 @@ export default function Sidebar() {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto custom-scrollbar">
+            <nav className={`px-3 py-6 space-y-2 overflow-y-auto custom-scrollbar ${projectId ? 'shrink-0 max-h-[50%]' : 'flex-1'}`}>
                 {userItems.map((item) => {
                     const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href) && !item.href.includes('admin'));
                     const Icon = item.icon;
@@ -91,6 +95,13 @@ export default function Sidebar() {
                     );
                 })}
             </nav>
+
+            {/* Timeline for Projects */}
+            {projectId && (
+                <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-4 border-t border-slate-200 dark:border-slate-800 shrink-0 min-h-[50%]">
+                    <SidebarTimeline projectId={projectId} isCollapsed={isCollapsed} />
+                </div>
+            )}
 
             {/* Profile Footer */}
             <div className="p-4 border-t border-slate-200 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-900">

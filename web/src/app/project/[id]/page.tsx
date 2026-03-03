@@ -41,7 +41,7 @@ export default async function ProjectBoard({ params }: { params: Promise<{ id: s
     });
 
     return (
-        <main className="min-h-full text-slate-700 dark:text-slate-300 font-sans selection:bg-indigo-500/30 overflow-x-hidden p-4 sm:p-6 lg:p-8 transition-colors duration-300">
+        <main className="min-h-full text-slate-700 dark:text-slate-300 font-sans selection:bg-indigo-500/30 p-4 sm:p-6 lg:p-8 transition-colors duration-300">
             {/* Realtime component injection */}
             <AutoRefresh interval={3000} />
 
@@ -70,7 +70,9 @@ export default async function ProjectBoard({ params }: { params: Promise<{ id: s
                     </div>
                 </header>
 
-                <KanbanBoardClient tasks={tasks} categoryStats={categoryStats} projectId={project.id} />
+                <div className="w-full">
+                    <KanbanBoardClient tasks={tasks} categoryStats={categoryStats} projectId={project.id} />
+                </div>
             </div>
         </main>
     );

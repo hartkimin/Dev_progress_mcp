@@ -32,32 +32,59 @@ function initDb() {
         category TEXT,
         title TEXT NOT NULL,
         description TEXT,
+        before_work TEXT,
+        after_work TEXT,
         status TEXT NOT NULL,
+        started_at DATETIME,
+        completed_at DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (project_id) REFERENCES projects(id)
       )
     `);
 
-        db.run(`
-      CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+        // Run migrations for fields added later
+        db.all("PRAGMA table_info(tasks)", (err, columns: any[]) => {
+            if (!err && columns) {
+                if (!columns.some(c => c.name === 'started_at')) {
+                    db.run("ALTER TABLE tasks ADD COLUMN started_at DATETIME", () => { });
+                }
+                if (!columns.some(c => c.name === 'completed_at')) {
+                    db.run("ALTER TABLE tasks ADD COLUMN completed_at DATETIME", () => { });
+                }
+            }
+        });
 
         db.run(`
-      CREATE TABLE IF NOT EXISTS api_keys (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        key_value TEXT NOT NULL UNIQUE,
-        name TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        last_used_at DATETIME,
-        FOREIGN KEY (user_id) REFERENCES users(id)
-      )
+      CREATE TABLE IF NOT EXISTS comments(
+                id TEXT PRIMARY KEY,
+                task_id TEXT NOT NULL,
+                author TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(task_id) REFERENCES tasks(id)
+            )
+            `);
+
+        db.run(`
+      CREATE TABLE IF NOT EXISTS users(
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            `);
+
+        db.run(`
+      CREATE TABLE IF NOT EXISTS api_keys(
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                key_value TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                last_used_at DATETIME,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            )
     `, () => {
             // After tables are created, seed a mock user if none exists
             db.get('SELECT count(*) as count FROM users', [], (err, row: any) => {
@@ -82,9 +109,14 @@ export interface Task {
     category?: string;
     title: string;
     description: string;
+    before_work?: string;
+    after_work?: string;
     status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+    started_at?: string | null;
+    completed_at?: string | null;
     created_at: string;
     updated_at: string;
+    comment_count?: number;
 }
 
 export interface User {
@@ -176,9 +208,30 @@ export function createTask(projectId: string, title: string, category: string = 
 
 export function updateTaskStatus(taskId: string, status: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
+        let setQuery = 'status = ?, updated_at = CURRENT_TIMESTAMP';
+
+        if (status === 'IN_PROGRESS') {
+            setQuery = 'status = ?, updated_at = CURRENT_TIMESTAMP, started_at = COALESCE(started_at, CURRENT_TIMESTAMP)';
+        } else if (status === 'DONE') {
+            setQuery = 'status = ?, updated_at = CURRENT_TIMESTAMP, completed_at = CURRENT_TIMESTAMP';
+        }
+
         db.run(
-            'UPDATE tasks SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            `UPDATE tasks SET ${setQuery} WHERE id = ? `,
             [status, taskId],
+            function (err) {
+                if (err) reject(err);
+                else resolve(this.changes > 0);
+            }
+        );
+    });
+}
+
+export function updateTaskDetails(taskId: string, description: string, beforeWork: string, afterWork: string): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+        db.run(
+            'UPDATE tasks SET description = ?, before_work = ?, after_work = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [description, beforeWork, afterWork, taskId],
             function (err) {
                 if (err) reject(err);
                 else resolve(this.changes > 0);
@@ -189,7 +242,15 @@ export function updateTaskStatus(taskId: string, status: string): Promise<boolea
 
 export function getTasksByProject(projectId: string): Promise<Task[]> {
     return new Promise((resolve, reject) => {
-        db.all('SELECT * FROM tasks WHERE project_id = ? ORDER BY created_at ASC', [projectId], (err, rows) => {
+        const query = `
+            SELECT t.*, COUNT(c.id) as comment_count 
+            FROM tasks t
+            LEFT JOIN comments c ON t.id = c.task_id
+            WHERE t.project_id = ?
+            GROUP BY t.id
+            ORDER BY t.created_at ASC
+            `;
+        db.all(query, [projectId], (err, rows) => {
             if (err) reject(err);
             else resolve(rows as Task[]);
         });

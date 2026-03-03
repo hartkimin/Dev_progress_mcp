@@ -58,7 +58,11 @@ export function getDb(): Promise<sqlite3.Database> {
                             category TEXT,
                             title TEXT NOT NULL,
                             description TEXT,
+                            before_work TEXT,
+                            after_work TEXT,
                             status TEXT NOT NULL,
+                            started_at DATETIME,
+                            completed_at DATETIME,
                             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                             FOREIGN KEY (project_id) REFERENCES projects(id)
@@ -66,8 +70,31 @@ export function getDb(): Promise<sqlite3.Database> {
                     `, (err) => {
                         if (err) reject(err);
                         else {
-                            dbInstance = db;
-                            resolve(db);
+                            // Run migrations
+                            db.all("PRAGMA table_info(tasks)", (err, columns: any[]) => {
+                                if (!err && columns) {
+                                    if (!columns.some(c => c.name === 'started_at')) {
+                                        db.run("ALTER TABLE tasks ADD COLUMN started_at DATETIME", () => { });
+                                    }
+                                    if (!columns.some(c => c.name === 'completed_at')) {
+                                        db.run("ALTER TABLE tasks ADD COLUMN completed_at DATETIME", () => { });
+                                    }
+                                }
+                            });
+
+                            db.run(`
+                                CREATE TABLE IF NOT EXISTS comments (
+                                    id TEXT PRIMARY KEY,
+                                    task_id TEXT NOT NULL,
+                                    author TEXT NOT NULL,
+                                    content TEXT NOT NULL,
+                                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                                    FOREIGN KEY (task_id) REFERENCES tasks(id)
+                                )
+                            `, () => {
+                                dbInstance = db;
+                                resolve(db);
+                            });
                         }
                     });
                 });
@@ -89,9 +116,22 @@ export interface Task {
     category?: string;
     title: string;
     description: string;
+    before_work?: string;
+    after_work?: string;
     status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+    started_at?: string | null;
+    completed_at?: string | null;
     created_at: string;
     updated_at: string;
+    comment_count?: number; // Optional since it comes from an aggregate JOIN
+}
+
+export interface Comment {
+    id: string;
+    task_id: string;
+    author: string;
+    content: string;
+    created_at: string;
 }
 
 export interface User {
@@ -174,7 +214,15 @@ export async function deleteProject(projectId: string): Promise<boolean> {
 export async function getTasksByProject(projectId: string): Promise<Task[]> {
     const db = await getDb();
     return new Promise((resolve, reject) => {
-        db.all('SELECT * FROM tasks WHERE project_id = ? ORDER BY created_at ASC', [projectId], (err, rows) => {
+        const query = `
+            SELECT t.*, COUNT(c.id) as comment_count 
+            FROM tasks t
+            LEFT JOIN comments c ON t.id = c.task_id
+            WHERE t.project_id = ? 
+            GROUP BY t.id
+            ORDER BY t.created_at ASC
+        `;
+        db.all(query, [projectId], (err, rows) => {
             if (err) reject(err);
             else resolve(rows as Task[]);
         });
@@ -184,12 +232,63 @@ export async function getTasksByProject(projectId: string): Promise<Task[]> {
 export async function updateTaskStatus(taskId: string, status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE'): Promise<boolean> {
     const db = await getDb();
     return new Promise((resolve, reject) => {
+        let setQuery = 'status = ?, updated_at = CURRENT_TIMESTAMP';
+
+        if (status === 'IN_PROGRESS') {
+            setQuery = 'status = ?, updated_at = CURRENT_TIMESTAMP, started_at = COALESCE(started_at, CURRENT_TIMESTAMP)';
+        } else if (status === 'DONE') {
+            setQuery = 'status = ?, updated_at = CURRENT_TIMESTAMP, completed_at = CURRENT_TIMESTAMP';
+        }
+
         db.run(
-            'UPDATE tasks SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            `UPDATE tasks SET ${setQuery} WHERE id = ?`,
             [status, taskId],
             function (err) {
                 if (err) reject(err);
                 else resolve(this.changes > 0);
+            }
+        );
+    });
+}
+
+export async function updateTaskDetails(taskId: string, description: string, beforeWork: string, afterWork: string): Promise<boolean> {
+    const db = await getDb();
+    return new Promise((resolve, reject) => {
+        db.run(
+            'UPDATE tasks SET description = ?, before_work = ?, after_work = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [description, beforeWork, afterWork, taskId],
+            function (err) {
+                if (err) reject(err);
+                else resolve(this.changes > 0);
+            }
+        );
+    });
+}
+
+// Comments
+export async function getCommentsActionDb(taskId: string): Promise<Comment[]> {
+    const db = await getDb();
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM comments WHERE task_id = ? ORDER BY created_at ASC', [taskId], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows as Comment[]);
+        });
+    });
+}
+
+export async function addCommentActionDb(taskId: string, author: string, content: string): Promise<string> {
+    const db = await getDb();
+    return new Promise((resolve, reject) => {
+        const id = crypto.randomUUID();
+        db.run(
+            'INSERT INTO comments (id, task_id, author, content) VALUES (?, ?, ?, ?)',
+            [id, taskId, author, content],
+            function (err) {
+                if (err) {
+                    console.error("Failed to add comment:", err);
+                    reject(err);
+                }
+                else resolve(id);
             }
         );
     });
@@ -283,7 +382,7 @@ export async function removeUser(id: string): Promise<boolean> {
     });
 }
 
-export async function getGlobalAnalytics(): Promise<GlobalAnalytics> {
+export async function getGlobalAnalytics(projectId?: string): Promise<GlobalAnalytics> {
     const db = await getDb();
     return new Promise((resolve, reject) => {
         db.serialize(() => {
@@ -292,15 +391,23 @@ export async function getGlobalAnalytics(): Promise<GlobalAnalytics> {
             const tasksByStatus = { TODO: 0, IN_PROGRESS: 0, REVIEW: 0, DONE: 0 };
             let totalUsers = 0;
 
-            db.get('SELECT count(*) as count FROM projects', [], (err, row: any) => {
+            const projQuery = projectId ? 'SELECT count(*) as count FROM projects WHERE id = ?' : 'SELECT count(*) as count FROM projects';
+            const projParams = projectId ? [projectId] : [];
+            db.get(projQuery, projParams, (err, row: any) => {
                 if (err) return reject(err);
                 if (row) totalProjects = row.count;
             });
-            db.get('SELECT count(*) as count FROM tasks', [], (err, row: any) => {
+
+            const taskQuery = projectId ? 'SELECT count(*) as count FROM tasks WHERE project_id = ?' : 'SELECT count(*) as count FROM tasks';
+            const taskParams = projectId ? [projectId] : [];
+            db.get(taskQuery, taskParams, (err, row: any) => {
                 if (err) return reject(err);
                 if (row) totalTasks = row.count;
             });
-            db.all('SELECT status, count(*) as count FROM tasks GROUP BY status', [], (err, rows: any[]) => {
+
+            const statusQuery = projectId ? 'SELECT status, count(*) as count FROM tasks WHERE project_id = ? GROUP BY status' : 'SELECT status, count(*) as count FROM tasks GROUP BY status';
+            const statusParams = projectId ? [projectId] : [];
+            db.all(statusQuery, statusParams, (err, rows: any[]) => {
                 if (err) return reject(err);
                 if (rows) {
                     rows.forEach(r => {
@@ -308,6 +415,7 @@ export async function getGlobalAnalytics(): Promise<GlobalAnalytics> {
                     });
                 }
             });
+
             db.get('SELECT count(*) as count FROM users', [], (err, row: any) => {
                 if (err) return reject(err);
                 if (row) totalUsers = row.count;

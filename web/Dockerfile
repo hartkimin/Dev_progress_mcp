@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:20 AS builder
 
 WORKDIR /app
 
@@ -12,27 +12,25 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:18-alpine AS runner
+FROM node:20 AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3002
+ENV HOSTNAME="0.0.0.0"
 
-# Install dependencies required by SQLite3 in alpine
-RUN apk add --no-cache python3 make g++
+# Standard node image has necessary tools, no apk needed
 
-COPY package*.json ./
-RUN npm install --omit=dev
-
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.ts ./
-
-# The Next.js app uses SQLite, so ensure data directory exists for volume mount
+# Ensure data directory exists for volume mount
 RUN mkdir -p /app/data
 ENV DB_PATH=/app/data/database.sqlite
 
+# Copy necessary files for standalone output
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
 EXPOSE 3002
 
-CMD ["npm", "run", "start", "--", "-p", "3002"]
+CMD ["node", "server.js"]
