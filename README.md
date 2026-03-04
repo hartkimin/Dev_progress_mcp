@@ -24,26 +24,64 @@ VibePlanner guides you through a structured development pipeline:
 -   **Analytics**: Monitor project health, task distribution, and completion rates.
 -   **Security**: Manage API keys and authorized users through the built-in admin dashboard.
 
-## 🛠️ Installation
+---
 
-### 1. Clone & Core Setup
+## 🛠️ Deployment Guide
+
+### Option 1: Quick Start with Docker (Recommended)
+
+The easiest way to get the full stack (MCP Server + Web Dashboard) running.
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/hartkimin/Dev_progress_mcp.git
 cd Dev_progress_mcp
 
-# Install dependencies
-npm install
+# 2. Build and run with Docker Compose
+docker-compose up -d --build
+```
+*The dashboard will be available at [http://localhost:3002](http://localhost:3002).*
 
-# Build the MCP server
+### Option 2: Manual Installation (Development)
+
+**Prerequisites**: Node.js 20+ and npm.
+
+#### 1. Core MCP Server Setup
+```bash
+# From the project root
+npm install
 npm run build
 ```
 
-### 2. Configure MCP Client
+#### 2. Web Dashboard Setup
+```bash
+cd web
+npm install
+npm run dev
+```
 
-Add the following to your `mcp.json` configuration (e.g., in Claude Desktop or Cursor settings):
+### ⚙️ Environment Variables
 
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `DP_API_KEY` | Secret key used by the MCP Server to authenticate. | (Required) |
+| `PORT` | Port number for the Web Dashboard. | `3000` (Dev) / `3002` (Docker) |
+| `DB_PATH` | Path to the SQLite database file. | `./database.sqlite` |
+
+---
+
+## 🤖 Usage Guide
+
+### 1. Generate an API Key
+- Open the [Web Dashboard](http://localhost:3002).
+- Navigate to **Settings > API Keys**.
+- Create a new secret key (e.g., "My Cursor Key").
+- **Copy and save this key immediately.** You will need it for your MCP client.
+
+### 2. Configure Your MCP Client
+
+#### For Claude Desktop
+Add this to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
@@ -51,34 +89,29 @@ Add the following to your `mcp.json` configuration (e.g., in Claude Desktop or C
       "command": "node",
       "args": ["/absolute/path/to/Dev_progress_mcp/dist/index.js"],
       "env": {
-        "DP_API_KEY": "your-secret-api-key"
+        "DP_API_KEY": "YOUR_GENERATED_KEY"
       }
     }
   }
 }
 ```
 
-*Note: You can generate a `DP_API_KEY` in the Web Dashboard's API Keys section.*
+#### For Cursor
+- Go to **Cursor Settings > MCP**.
+- Click **+ Add New MCP Server**.
+- Name: `vibe-planner`
+- Type: `command`
+- Command: `node /absolute/path/to/Dev_progress_mcp/dist/index.js`
+- Set Environment Variable: `DP_API_KEY=YOUR_GENERATED_KEY`
 
-### 3. Start the Web Dashboard
+### 3. Start Vibe Coding!
+Now you can ask your AI assistant:
+- *"VibePlanner에서 새 프로젝트 'AI 챗봇'을 만들어줘."*
+- *"현재 진행 중인 프로젝트 목록을 보여줘."*
+- *"Architecture 단계에 'DB 스키마 설계' 작업을 추가해줘."*
+- *"칸반 보드 상태를 확인해줄래?"*
 
-```bash
-cd web
-npm install
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) to see your dashboard.
-
-## 🤖 Available MCP Tools
-
-Your AI assistant can use these tools to manage your project autonomously:
-
--   `create_project`: Start a new tracking board.
--   `list_projects`: Fetch all active projects.
--   `create_task`: Add tasks to the pipeline (includes phase and category metadata).
--   `update_task_status`: Move tasks through the workflow.
--   `update_task_details`: Log work, update descriptions, and record "vibe" notes.
--   `get_kanban_board`: Retrieve a formatted Markdown view of the current state.
+---
 
 ## 📸 Screenshots
 
