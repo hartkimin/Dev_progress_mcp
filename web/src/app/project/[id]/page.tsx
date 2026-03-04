@@ -3,6 +3,9 @@ import Link from 'next/link';
 import AutoRefresh from '../../components/AutoRefresh';
 
 import KanbanBoardClient from './KanbanBoardClient';
+import ProcessStepper from '@/components/ProcessStepper';
+import VibeGuidePanel from '@/components/VibeGuidePanel';
+import LiveSyncIndicator from '@/app/components/LiveSyncIndicator';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,14 +67,13 @@ export default async function ProjectBoard({ params }: { params: Promise<{ id: s
                             </p>
                         )}
                     </div>
-                    <div className="flex items-center gap-2 text-xs font-mono text-slate-600 dark:text-slate-500 bg-white dark:bg-slate-900/50 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Syncing via MCP
-                    </div>
+                    <LiveSyncIndicator />
                 </header>
 
                 <div className="w-full">
-                    <KanbanBoardClient tasks={tasks} categoryStats={categoryStats} projectId={project.id} />
+                    <ProcessStepper tasks={tasks} />
+                    <VibeGuidePanel tasks={tasks} />
+                    <KanbanBoardClient tasks={tasks} categoryStats={categoryStats} projectId={project.id} projectName={project.name} />
                 </div>
             </div>
         </main>

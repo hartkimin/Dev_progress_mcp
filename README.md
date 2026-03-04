@@ -1,8 +1,8 @@
-# Dev Progress MCP
+# Vibe Coding Planner (Dev Progress MCP)
 
-A Model Context Protocol (MCP) server for tracking development progress, along with a Next.js web dashboard for project management. 
+A Model Context Protocol (MCP) server & Next.js dashboard designed as a guided planner for vibe-coding beginners. 
 
-This project aims to help developers track their tasks, manage projects, and visualize progress using a Kanban board seamlessly integrated with AI coding assistants (like Cursor, Anthropic Claude Desktop, etc.) via the Model Context Protocol.
+This project aims to help developers track their tasks, manage projects, and visualize progress across the 5 Phases of the Vibe Coding lifecycle, seamlessly integrating with AI coding assistants (Cursor, Claude Desktop, etc.) via MCP.
 
 ## Features
 
@@ -41,7 +41,7 @@ npm run build
 
 ## Running the MCP Server
 
-The MCP server uses standard input/output (stdio) for communication. It requires the `DP_API_KEY` environment variable to run. Make sure your database contains valid API keys or you configure the development seeding scripts first.
+The MCP server uses standard input/output (stdio) for communication. It requires the `DP_API_KEY` environment variable to run. Make sure your database contains valid API keys or you configure the development seating scripts first.
 
 ```bash
 # Example to run the server directly

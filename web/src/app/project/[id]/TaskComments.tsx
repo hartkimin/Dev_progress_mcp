@@ -10,16 +10,17 @@ export function TaskComments({ taskId }: { taskId: string }) {
     const [isLoading, setIsLoading] = useState(true);
     const [isPosting, startTransition] = useTransition();
 
-    const fetchComments = async () => {
+    const fetchComments = React.useCallback(async () => {
         setIsLoading(true);
         const data = await getCommentsAction(taskId);
         setComments(data);
         setIsLoading(false);
-    };
+    }, [taskId]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchComments();
-    }, [taskId]);
+    }, [fetchComments]);
 
     const handlePostComment = () => {
         if (!newComment.trim()) return;

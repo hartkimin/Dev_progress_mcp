@@ -5,6 +5,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
     CallToolRequestSchema,
     ListToolsRequestSchema,
+    ListPromptsRequestSchema,
+    GetPromptRequestSchema,
     McpError,
     ErrorCode,
 } from "@modelcontextprotocol/sdk/types.js";
@@ -12,12 +14,13 @@ import * as db from './db.js';
 
 const server = new Server(
     {
-        name: "dev-progress-mcp",
+        name: "vibeplanner",
         version: "1.0.0",
     },
     {
         capabilities: {
             tools: {},
+            prompts: {},
         },
     }
 );
@@ -69,6 +72,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         category: {
                             type: "string",
                             description: "Optional category of the task used for grouping and displaying progress (e.g. 'Backend API', 'Frontend App').",
+                        },
+                        phase: {
+                            type: "string",
+                            description: "Vibe Coding phase of the task (e.g. 'Ideation & Requirements', 'Architecture & Design', 'Implementation', 'Testing & QA', 'Deployment & Review')",
+                        },
+                        taskType: {
+                            type: "string",
+                            description: "Type of task (e.g. 'Prompting', 'Coding', 'Review', 'Docs')",
+                        },
+                        scale: {
+                            type: "string",
+                            description: "Scale of the task (e.g. 'Epic', 'Story', 'Task')",
                         },
                         description: {
                             type: "string",
@@ -125,6 +140,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                             type: "string",
                             description: "After Work Content (작업 후 내용). The outcome or results after the work is completed.",
                         },
+                        phase: {
+                            type: "string",
+                            description: "Vibe Coding phase of the task (e.g. 'Ideation & Requirements', 'Architecture & Design', 'Implementation', 'Testing & QA', 'Deployment & Review')",
+                        },
+                        taskType: {
+                            type: "string",
+                            description: "Type of task (e.g. 'Prompting', 'Coding', 'Review', 'Docs')",
+                        },
+                        scale: {
+                            type: "string",
+                            description: "Scale of the task (e.g. 'Epic', 'Story', 'Task')",
+                        },
                     },
                     required: ["taskId"],
                 },
@@ -145,6 +172,184 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             }
         ],
     };
+});
+
+// Register available prompts for Vibe Coding Workflows
+server.setRequestHandler(ListPromptsRequestSchema, async () => {
+    return {
+        prompts: [
+            {
+                name: "vibe_coding_phase_1_ideation",
+                description: "Phase 1: 기획 단계 (Ideation & Planning) - 프로젝트 초기 기획 및 요구사항 도출 자동화 오케스트레이션",
+                arguments: [
+                    {
+                        name: "projectId",
+                        description: "적용할 대상 Project ID (선택사항, 생략 시 먼저 진행할 프로젝트를 묻게 됩니다)",
+                        required: false
+                    }
+                ]
+            },
+            {
+                name: "vibe_coding_phase_2_architecture",
+                description: "Phase 2: 아키텍처 설계 (Architecture & Design) - 기술 스택, DB 스키마, UI 와이어프레임 설계 자동화 오케스트레이션",
+                arguments: [
+                    {
+                        name: "projectId",
+                        description: "적용할 대상 Project ID",
+                        required: false
+                    }
+                ]
+            },
+            {
+                name: "vibe_coding_phase_3_implementation",
+                description: "Phase 3: 핵심 기능 구현 (Implementation) - 프론트엔드/백엔드 로직 구현 및 태스크 자동 생성 오케스트레이션",
+                arguments: [
+                    {
+                        name: "projectId",
+                        description: "적용할 대상 Project ID",
+                        required: false
+                    }
+                ]
+            },
+            {
+                name: "vibe_coding_phase_4_testing",
+                description: "Phase 4: 테스트 및 디버깅 (Testing & QA) - 유닛/통합 테스트, 버그 수정 태스크 자동 생성 오케스트레이션",
+                arguments: [
+                    {
+                        name: "projectId",
+                        description: "적용할 대상 Project ID",
+                        required: false
+                    }
+                ]
+            },
+            {
+                name: "vibe_coding_phase_5_deployment",
+                description: "Phase 5: 배포 및 완성 (Deployment & Review) - CI/CD 파이프라인, 실서버 호스팅, 문서화 태스크 자동 생성 오케스트레이션",
+                arguments: [
+                    {
+                        name: "projectId",
+                        description: "적용할 대상 Project ID",
+                        required: false
+                    }
+                ]
+            }
+        ]
+    };
+});
+
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
+    const projectId = args?.projectId;
+
+    const basePromptInstructions = (phaseTitle: string, mandatoryTasks: string[]) => `
+당신은 완벽한 Vibe Coding 마스터이자 프로젝트 매니저 어시스턴트입니다.
+사용자는 지금 **${phaseTitle}** 단계를 시작하려고 합니다.
+현재 프로젝트 ID: ${projectId ? projectId : '알 수 없음. 사용자에게 대상 프로젝트 ID 또는 이름을 물어보세요.'}
+
+[당신의 임무 워크플로우]
+1. 사용자에게 환영 인사를 건네고, 이 단계(${phaseTitle})에서 어떤 일들을 해야 하는지 안내합니다.
+2. 아래 필수 TODO 리스트를 뼈대로 삼되, 사용자 프로젝트의 특수성에 맞게 구체적인 질문 1~2개를 먼저 던져서 컨텍스트를 파악합니다.
+3. 사용자가 단답형으로라도 대답하면, 사용자를 대신하여 \`create_task\` MCP 툴을 직접 호출해서 아래 필수 항목을 포함한 구체화된 태스크들을 칸반보드에 추가합니다.
+4. 툴 호출이 성공하면, 추가된 태스크 목록을 정리해서 보여주고 "기획이 끝났다면 다음 페이즈로 넘어갈까요?"와 같이 친절하게 안내합니다.
+
+[반드시 생성해야 하는 필수 TODO 리스트 (create_task 사용)]
+${mandatoryTasks.map(t => `- ${t}`).join('\n')}
+
+**주의:** 이 프롬프트는 화면에 노출되는 텍스트가 아니라, 당신(LLM)이 어떻게 행동해야 할지를 지시하는 시스템 프롬프트입니다. 안내-질문-답변수신-Tool실행-피드백 이라는 워크플로우를 주도적으로 이끌어주세요!`;
+
+    switch (name) {
+        case "vibe_coding_phase_1_ideation":
+            return {
+                messages: [
+                    {
+                        role: "user",
+                        content: {
+                            type: "text",
+                            text: basePromptInstructions("Phase 1: 기획 (Ideation)", [
+                                "프로젝트 핵심 목표 및 타겟 유저 정의",
+                                "주요 기능(Core Features) 목록 및 우선순위 선정",
+                                "비기능적 요구사항(보안, 성능 등) 식별",
+                                "유스케이스(Use-Case) 시나리오 작성"
+                            ])
+                        }
+                    }
+                ]
+            };
+        case "vibe_coding_phase_2_architecture":
+            return {
+                messages: [
+                    {
+                        role: "user",
+                        content: {
+                            type: "text",
+                            text: basePromptInstructions("Phase 2: 아키텍처 설계 (Architecture)", [
+                                "프론트엔드/백엔드 기술 스택 선정 및 컴포넌트 아키텍처 설계",
+                                "데이터베이스 스키마(ERD) 설계",
+                                "주요 API 엔드포인트 명세서 작성",
+                                "주요 화면 구성 및 UI/UX 와이어프레임 설계",
+                                "공통 상태 관리 및 디자인 시스템 정의"
+                            ])
+                        }
+                    }
+                ]
+            };
+        case "vibe_coding_phase_3_implementation":
+            return {
+                messages: [
+                    {
+                        role: "user",
+                        content: {
+                            type: "text",
+                            text: basePromptInstructions("Phase 3: 핵심 기능 구현 (Implementation)", [
+                                "프로젝트 초기 보일러플레이트 세팅 및 환경 변수 구성",
+                                "코어 데이터베이스 모델 및 마이그레이션 적용",
+                                "인증/인가 로직 및 핵심 API 계층 구현",
+                                "주요 화면별 프론트엔드 UI 컴포넌트 개발 및 API 연동",
+                                "코드 스멜 제거를 위한 지속적인 리팩토링 진행"
+                            ])
+                        }
+                    }
+                ]
+            };
+        case "vibe_coding_phase_4_testing":
+            return {
+                messages: [
+                    {
+                        role: "user",
+                        content: {
+                            type: "text",
+                            text: basePromptInstructions("Phase 4: 테스트 및 디버깅 (Testing)", [
+                                "주요 비즈니스 로직에 대한 단위 테스트(Unit Test) 작성",
+                                "클라이언트-서버 간 통합 테스트(Integration Test) 진행",
+                                "예외 상황(Edge Cases) 트래킹 및 에러 핸들링 검증",
+                                "크로스 브라우징 및 다양한 디바이스(반응형) 환경 동작 확인",
+                                "발견된 성능 병목 지점 및 버그 식별 시 수정 완료"
+                            ])
+                        }
+                    }
+                ]
+            };
+        case "vibe_coding_phase_5_deployment":
+            return {
+                messages: [
+                    {
+                        role: "user",
+                        content: {
+                            type: "text",
+                            text: basePromptInstructions("Phase 5: 배포 및 완성 (Deployment)", [
+                                "코드베이스 최적화 및 프로덕션 빌드(Production Build) 검증",
+                                "CI/CD 파이프라인(Github Actions 등) 구축",
+                                "클라우드 서비스(호스팅 등) 실서버 리소스 프로비저닝 및 실제 배포",
+                                "프로젝트 README.md 업데이트 (실행 방법, 아키텍처 등 명시)",
+                                "도메인 연결 및 SSL 처리, 최적화 모니터링 적용"
+                            ])
+                        }
+                    }
+                ]
+            };
+        default:
+            throw new McpError(ErrorCode.MethodNotFound, `Prompt not found: ${name}`);
+    }
 });
 
 // Handle tool execution
@@ -173,8 +378,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
 
             case "create_task": {
-                const { projectId, title, category = "", description = "", status = "TODO" } = args as Record<string, any>;
-                const id = await db.createTask(projectId, title, category, description, status);
+                const { projectId, title, category = "", phase = "", taskType = "", scale = "", description = "", status = "TODO" } = args as Record<string, any>;
+                const id = await db.createTask(projectId, title, category, phase, taskType, scale, description, status);
                 return {
                     content: [{ type: "text", text: `Task created successfully with ID: ${id}` }],
                 };
@@ -182,7 +387,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
             case "update_task_status": {
                 const { taskId, status } = args as Record<string, any>;
-                const updated = await db.updateTaskStatus(taskId, status);
+                const updated = await db.updateTaskStatus(taskId, status, 'MCP Server');
                 if (!updated) {
                     throw new McpError(ErrorCode.InvalidParams, `Task with ID ${taskId} not found or update failed.`);
                 }
@@ -192,8 +397,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
 
             case "update_task_details": {
-                const { taskId, description = "", beforeWork = "", afterWork = "" } = args as Record<string, any>;
-                const updated = await db.updateTaskDetails(taskId, description, beforeWork, afterWork);
+                const { taskId, description = "", beforeWork = "", afterWork = "", phase = "", taskType = "", scale = "" } = args as Record<string, any>;
+                const updated = await db.updateTaskDetails(taskId, description, beforeWork, afterWork, phase, taskType, scale, 'MCP Server');
                 if (!updated) {
                     throw new McpError(ErrorCode.InvalidParams, `Task with ID ${taskId} not found or update failed.`);
                 }

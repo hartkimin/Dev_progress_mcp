@@ -1,7 +1,14 @@
 node_modules
+.next
 dist
-data
-*.db
-*.db-journal
 .git
-.gitignore
+.env
+.env.local
+*.log
+data
+db/*.db
+web/node_modules
+web/.next
+web/dist
+Dockerfile*
+# supervisord.conf  <- 주석 처리하여 제외 대상에서 제거
