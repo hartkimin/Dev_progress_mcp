@@ -57,18 +57,14 @@ export default function IntegrationsPage() {
                                         <pre className="text-sm font-mono leading-relaxed text-slate-300 p-5 bg-transparent m-0">
                                             {`{
   "mcpServers": {
-    "vibeplanner": {
-      "command": "docker",
+    "vibe-planner": {
+      "command": "node",
       "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-v",
-        "/absolute/path/to/dev_progress_mcp:/app",
-        "-e",
-        "DP_API_KEY=vp_live_YOUR_SECRET_KEY",
-        "vibeplanner"
-      ]
+        "D:\\Project\\16_Dev_progress_mcp\\dist\\index.js"
+      ],
+      "env": {
+        "DP_API_KEY": "YOUR_SECRET_KEY"
+      }
     }
   }
 }`}

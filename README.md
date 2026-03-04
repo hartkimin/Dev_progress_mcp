@@ -87,7 +87,7 @@ Add this to your `claude_desktop_config.json`:
   "mcpServers": {
     "vibe-planner": {
       "command": "node",
-      "args": ["/absolute/path/to/Dev_progress_mcp/dist/index.js"],
+      "args": ["D:\\Project\\16_Dev_progress_mcp\\dist\\index.js"],
       "env": {
         "DP_API_KEY": "YOUR_GENERATED_KEY"
       }
@@ -101,7 +101,7 @@ Add this to your `claude_desktop_config.json`:
 - Click **+ Add New MCP Server**.
 - Name: `vibe-planner`
 - Type: `command`
-- Command: `node /absolute/path/to/Dev_progress_mcp/dist/index.js`
+- Command: `node D:\Project\16_Dev_progress_mcp\dist\index.js`
 - Set Environment Variable: `DP_API_KEY=YOUR_GENERATED_KEY`
 
 ### 3. Start Vibe Coding!
