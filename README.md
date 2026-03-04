@@ -1,75 +1,93 @@
-# Vibe Coding Planner (Dev Progress MCP)
+# VibePlanner (Vibe Coding Planner)
 
-A Model Context Protocol (MCP) server & Next.js dashboard designed as a guided planner for vibe-coding beginners. 
+A Model Context Protocol (MCP) server & Next.js dashboard designed as a guided planner for vibe-coding beginners and pros alike.
 
-This project aims to help developers track their tasks, manage projects, and visualize progress across the 5 Phases of the Vibe Coding lifecycle, seamlessly integrating with AI coding assistants (Cursor, Claude Desktop, etc.) via MCP.
+VibePlanner helps you bridge the gap between "vibe-coding" (AI-assisted rapid development) and disciplined project management. It tracks your progress through the **5 Phases of Vibe Coding**, seamlessly integrating with AI assistants like Cursor, Claude Desktop, and others via the Model Context Protocol.
 
-## Features
+## 🚀 The 5 Phases of Vibe Coding
 
-- **Project Management**: Create and manage multiple projects.
-- **Task Tracking**: Add tasks to projects, categorize them, and track their status (TODO, IN_PROGRESS, REVIEW, DONE).
-- **Kanban Board Visualization**: Easily retrieve a Markdown-formatted Kanban board for any project.
-- **Web Dashboard**: Included Next.js frontend with Timeline views, Analytics, and Integrations management.
-- **Secure Authentication**: Requires an API key (`DP_API_KEY`) to ensure only authorized clients can access the MCP server.
+VibePlanner guides you through a structured development pipeline:
 
-## Usage Overview
+1.  **💡 Ideation & Requirements**: Define your vision, brainstorm features, and gather initial requirements.
+2.  **🏗️ Architecture & Design**: Plan your tech stack, design the system architecture, and map out the user flow.
+3.  **💻 Implementation**: Build the core features with the help of AI assistants, tracking every task and milestone.
+4.  **🧪 Testing & QA**: Verify functionality, fix bugs, and ensure a high-quality user experience.
+5.  **🚀 Deployment & Review**: Ship your application and gather feedback for the next iteration.
 
-### Dashboard Overview
-The web dashboard provides a clean overview of all your projects and their current progress.
-![Dashboard Overview](./assets/dashboard_overview.png)
+## ✨ Features
 
-### Kanban Board & Task Details
-Manage tasks seamlessly with a visual Kanban board, timeline views, and detailed analytics.
-![Kanban Board](./assets/kanban_board.png)
+-   **MCP-Native**: First-class integration with AI coding assistants. Let your AI agent manage your tasks for you.
+-   **Kanban Board**: Visual task management with swimlanes (TODO, IN_PROGRESS, REVIEW, DONE).
+-   **Process Pipeline**: A visual stepper that automatically tracks which phase of the development lifecycle you're in.
+-   **Multi-Language (i18n)**: Full support for English and Korean.
+-   **Dark/Light Mode**: Beautifully designed UI that respects your system theme.
+-   **Analytics**: Monitor project health, task distribution, and completion rates.
+-   **Security**: Manage API keys and authorized users through the built-in admin dashboard.
 
-### Video Demonstration
-![Dashboard Demo](./assets/dashboard_demo.webp)
+## 🛠️ Installation
 
-## Installation
+### 1. Clone & Core Setup
 
 ```bash
 # Clone the repository
 git clone https://github.com/hartkimin/Dev_progress_mcp.git
 cd Dev_progress_mcp
 
-# Install dependencies for the MCP server
+# Install dependencies
 npm install
 
 # Build the MCP server
 npm run build
 ```
 
-## Running the MCP Server
+### 2. Configure MCP Client
 
-The MCP server uses standard input/output (stdio) for communication. It requires the `DP_API_KEY` environment variable to run. Make sure your database contains valid API keys or you configure the development seating scripts first.
+Add the following to your `mcp.json` configuration (e.g., in Claude Desktop or Cursor settings):
 
-```bash
-# Example to run the server directly
-DP_API_KEY=your-api-key npm start
+```json
+{
+  "mcpServers": {
+    "vibe-planner": {
+      "command": "node",
+      "args": ["/absolute/path/to/Dev_progress_mcp/dist/index.js"],
+      "env": {
+        "DP_API_KEY": "your-secret-api-key"
+      }
+    }
+  }
+}
 ```
 
-## Available MCP Tools
+*Note: You can generate a `DP_API_KEY` in the Web Dashboard's API Keys section.*
 
-Once connected, the MCP server exposes the following tools to the AI assistant:
-
-- `create_project`: Create a new project to track development progress.
-- `list_projects`: List all ongoing projects.
-- `create_task`: Add a new task to a project.
-- `update_task_status`: Move a task across the Kanban board (update status).
-- `get_kanban_board`: Retrieve the current Kanban board layout for a specific project.
-
-## Web Dashboard
-
-A full-featured Next.js frontend is available in the `web` directory for visual management of your API keys, projects, and tasks.
+### 3. Start the Web Dashboard
 
 ```bash
 cd web
 npm install
 npm run dev
 ```
+Open [http://localhost:3000](http://localhost:3000) to see your dashboard.
 
-The web dashboard will be available at [http://localhost:3000](http://localhost:3000).
+## 🤖 Available MCP Tools
 
-## License
+Your AI assistant can use these tools to manage your project autonomously:
 
-ISC
+-   `create_project`: Start a new tracking board.
+-   `list_projects`: Fetch all active projects.
+-   `create_task`: Add tasks to the pipeline (includes phase and category metadata).
+-   `update_task_status`: Move tasks through the workflow.
+-   `update_task_details`: Log work, update descriptions, and record "vibe" notes.
+-   `get_kanban_board`: Retrieve a formatted Markdown view of the current state.
+
+## 📸 Screenshots
+
+### Dashboard Overview
+![Dashboard Overview](./assets/dashboard_overview.png)
+
+### Kanban & Process Stepper
+![Kanban Board](./assets/kanban_board.png)
+
+## 📄 License
+
+ISC License. Built with ❤️ for the Vibe Coding community.
