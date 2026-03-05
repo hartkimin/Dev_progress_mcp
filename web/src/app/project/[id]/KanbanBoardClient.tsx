@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Task } from '@/lib/db';
-import { X, Calendar, Tag, Hash, Activity, Clock, Loader2, Edit2, Save, MessageSquare, CheckCircle2, Sparkles, AlertCircle, Info, ChevronDown, ChevronUp, Map, Target, BookOpen, Copy, Check } from 'lucide-react';
-import { setTaskStatus, saveTaskDetails, syncTaskFromDb, setTaskPhaseAndStatus, createTaskAction } from './actions';
+import { X, Calendar, Tag, Hash, Activity, Clock, Loader2, Edit2, Save, MessageSquare, CheckCircle2, Sparkles, AlertCircle, Info, ChevronDown, ChevronUp, Target, BookOpen, Copy, Check, Trash2 } from 'lucide-react';
+import { setTaskStatus, saveTaskDetails, syncTaskFromDb, createTaskAction, deleteTaskAction } from './actions';
 import { TaskComments } from './TaskComments';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -138,64 +138,9 @@ export default function KanbanBoardClient({
     const [isPending, startTransition] = useTransition();
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncResult, setSyncResult] = useState<{ type: 'success' | 'error' | 'info', message: string } | null>(null);
-    const [viewMode, setViewMode] = useState<'status' | 'phase'>('status');
+    const [showAddTask, setShowAddTask] = useState(false);
+    const [newTaskTitle, setNewTaskTitle] = useState('');
 
-    const [showVibeGuide, setShowVibeGuide] = useState(false);
-
-    const VIBE_PHASES = [
-        {
-            id: '1. Ideation',
-            title: '1. 아이디어 기획 (Ideation)',
-            description: '프로젝트의 핵심 목표, 주 사용자, 주요 기능(Feature)을 정의하고 기초적인 기획을 정리합니다.',
-            criteria: '모든 요구사항과 코어 기능 목록이 확정되었을 때',
-            color: 'from-amber-500/10 to-transparent',
-            borderColor: 'border-amber-200 dark:border-amber-800/50',
-            textColor: 'text-amber-700 dark:text-amber-400',
-            bgBadge: 'bg-amber-100 dark:bg-amber-900/40'
-        },
-        {
-            id: '2. Architecture',
-            title: '2. 아키텍처 설계 (Architecture)',
-            description: '기술 스택(Tech Stack)을 선정하고 데이터베이스 스키마 및 UI/UX 와이어프레임을 설계합니다.',
-            criteria: 'DB 구조와 메인 레이아웃 설계가 확정되었을 때',
-            color: 'from-blue-500/10 to-transparent',
-            borderColor: 'border-blue-200 dark:border-blue-800/50',
-            textColor: 'text-blue-700 dark:text-blue-400',
-            bgBadge: 'bg-blue-100 dark:bg-blue-900/40'
-        },
-        {
-            id: '3. Implementation',
-            title: '3. 핵심기능 구현 (Implementation)',
-            description: '본격적으로 실제 코드를 작성합니다. UI 컴포넌트를 만들고 데이터베이스 로직을 연결합니다.',
-            criteria: '기획한 주요 기능의 코딩 및 연결이 모두 끝났을 때',
-            color: 'from-indigo-500/10 to-transparent',
-            borderColor: 'border-indigo-200 dark:border-indigo-800/50',
-            textColor: 'text-indigo-700 dark:text-indigo-400',
-            bgBadge: 'bg-indigo-100 dark:bg-indigo-900/40'
-        },
-        {
-            id: '4. Testing',
-            title: '4. 테스트 및 디버깅 (Testing)',
-            description: '구현된 기능들이 정상으로 동작하는지 직접 확인하고 발견된 에러나 버그를 수정합니다.',
-            criteria: '앱 작동 시 발견된 치명적인 버그가 모두 해결되었을 때',
-            color: 'from-rose-500/10 to-transparent',
-            borderColor: 'border-rose-200 dark:border-rose-800/50',
-            textColor: 'text-rose-700 dark:text-rose-400',
-            bgBadge: 'bg-rose-100 dark:bg-rose-900/40'
-        },
-        {
-            id: '5. Deployment',
-            title: '5. 배포 및 완성 (Deployment)',
-            description: '작업한 코드를 서버에 올리고, 프로젝트 README나 사용자 가이드라인을 최종적으로 작성합니다.',
-            criteria: '실제 서비스 가능한 상태가 완료되었을 때',
-            color: 'from-emerald-500/10 to-transparent',
-            borderColor: 'border-emerald-200 dark:border-emerald-800/50',
-            textColor: 'text-emerald-700 dark:text-emerald-400',
-            bgBadge: 'bg-emerald-100 dark:bg-emerald-900/40'
-        }
-    ];
-
-    const PHASES = VIBE_PHASES.map(p => p.id);
 
     useEffect(() => {
         setIsMounted(true);
@@ -211,29 +156,15 @@ export default function KanbanBoardClient({
         if (!destination) return;
         if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
-        if (viewMode === 'phase') {
-            const [destPhase, destStatus] = destination.droppableId.split('::');
-            const newStatus = destStatus as 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
-            const newPhase = destPhase === 'Unassigned' ? '' : destPhase;
+        const newStatus = destination.droppableId as 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
 
-            // Optimistic UI update
-            setTasks(prev => prev.map(t => t.id === draggableId ? { ...t, status: newStatus, phase: newPhase } : t));
+        // Optimistic UI update
+        setTasks(prev => prev.map(t => t.id === draggableId ? { ...t, status: newStatus } : t));
 
-            // Server Action
-            startTransition(() => {
-                setTaskPhaseAndStatus(draggableId, newPhase, newStatus, projectId);
-            });
-        } else {
-            const newStatus = destination.droppableId as 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
-
-            // Optimistic UI update
-            setTasks(prev => prev.map(t => t.id === draggableId ? { ...t, status: newStatus } : t));
-
-            // Server Action
-            startTransition(() => {
-                setTaskStatus(projectId, draggableId, newStatus);
-            });
-        }
+        // Server Action
+        startTransition(() => {
+            setTaskStatus(projectId, draggableId, newStatus);
+        });
     };
 
     const columns = [
@@ -271,14 +202,19 @@ export default function KanbanBoardClient({
                                 setIsEditingDetails(false);
                             }
                         }}
-                        className={`bg-white dark:bg-slate-800/90 border cursor-pointer ${isPulse && !snapshot.isDragging ? 'border-blue-400 dark:border-blue-500/70 ring-2 ring-blue-400/30 dark:ring-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.3)] dark:shadow-[0_0_15px_rgba(59,130,246,0.5)] animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]' : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 shadow-sm dark:shadow-none hover:shadow-md'} p - 4 rounded - xl transition - all group duration - 200 ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-xl ring-2 ring-indigo-500/50 z-[100]' : ''} `}
+                        className={`bg-white dark:bg-slate-800/90 border cursor-pointer ${isPulse && !snapshot.isDragging ? 'border-blue-400 dark:border-blue-500/70 ring-2 ring-blue-400/30 dark:ring-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.3)] dark:shadow-[0_0_15px_rgba(59,130,246,0.5)] animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]' : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 shadow-sm dark:shadow-none hover:shadow-md'} p-4 rounded-xl transition-all group duration-200 overflow-hidden ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-xl ring-2 ring-indigo-500/50 z-[100]' : ''}`}
                         style={provided.draggableProps.style}
                     >
-                        {(task.category || task.is_ai_processing) && (
-                            <div className="mb-2 flex items-center gap-2">
+                        {(task.category || task.is_ai_processing || task.task_type) && (
+                            <div className="mb-2 flex items-center gap-2 flex-wrap">
                                 {task.category && (
                                     <span className="inline-block px-2 py-0.5 bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 rounded text-[10px] font-bold uppercase tracking-wider">
                                         {task.category}
+                                    </span>
+                                )}
+                                {task.task_type && (
+                                    <span className="inline-block px-2 py-0.5 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 rounded text-[10px] font-bold tracking-wider">
+                                        {task.task_type}
                                     </span>
                                 )}
                                 {task.is_ai_processing && (
@@ -289,7 +225,7 @@ export default function KanbanBoardClient({
                                 )}
                             </div>
                         )}
-                        <h3 className="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white mb-2 leading-snug">
+                        <h3 className="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white mb-2 leading-snug line-clamp-2">
                             {task.title}
                         </h3>
                         {task.description && (
@@ -308,9 +244,25 @@ export default function KanbanBoardClient({
                                     </span>
                                 ) : null}
                             </div>
-                            <span className="text-[11px] text-slate-500 font-medium">
-                                {new Date(task.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', timeZone: 'Asia/Seoul' })}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-slate-500 font-medium">
+                                    {new Date(task.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', timeZone: 'Asia/Seoul' })}
+                                </span>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (confirm('이 태스크를 삭제하시겠습니까?')) {
+                                            startTransition(async () => {
+                                                await deleteTaskAction(projectId, task.id);
+                                            });
+                                        }
+                                    }}
+                                    className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                                    title="태스크 삭제"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -323,59 +275,10 @@ export default function KanbanBoardClient({
             <div className="flex flex-col gap-6 w-full">
 
                 {tasks.length === 0 ? (
-                    <EmptyStateGuide phases={VIBE_PHASES} projectName={projectName} projectId={projectId} />
+                    <EmptyStateGuide phases={[]} projectName={projectName} projectId={projectId} />
                 ) : (
                     <>
-                        {/* Vibe Coding Guide Banner */}
-                        <div className="bg-gradient-to-r from-indigo-50 dark:from-indigo-900/20 to-purple-50 dark:to-purple-900/20 border border-indigo-100 dark:border-indigo-800/30 rounded-2xl overflow-hidden shadow-sm transition-all duration-300">
-                            <button
-                                onClick={() => setShowVibeGuide(!showVibeGuide)}
-                                className="w-full flex items-center justify-between px-6 py-4 outline-none hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-sm flex-shrink-0">
-                                        <Sparkles className="w-5 h-5" />
-                                    </div>
-                                    <div className="text-left flex flex-col">
-                                        <h2 className="text-[15px] font-bold text-slate-800 dark:text-slate-100">
-                                            초보자를 위한 바이브 코딩(Vibe Coding) 가이드
-                                        </h2>
-                                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                            AI와 함께 앱을 완성하기 위한 5단계 로드맵을 확인하세요
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm text-slate-500 border border-slate-200 dark:border-slate-700 transition-transform duration-300">
-                                    {showVibeGuide ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                </div>
-                            </button>
 
-                            {showVibeGuide && (
-                                <div className="px-6 pb-6 pt-2 animate-in slide-in-from-top-4 fade-in duration-300">
-                                    <div className="bg-white dark:bg-slate-900/50 rounded-xl p-5 border border-slate-200/60 dark:border-slate-800/60 shadow-inner">
-                                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-5 leading-relaxed font-medium">
-                                            바이브 코딩은 AI를 활용해 큰 그림부터 세부 코드까지 <b>순차적으로</b> 작업하는 개발 방법론입니다. 아래의 5가지 단계를 순서대로 진행하며, 한 단계의 태스크가 모두 <b>완료(Completed)</b> 되었을 때 다음 페이즈로 넘어가는 것을 권장합니다.
-                                        </p>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                                            {VIBE_PHASES.map((phase, idx) => (
-                                                <div key={idx} className={`relative flex flex-col gap-2 p-4 rounded-xl border bg-gradient-to-b ${phase.color} ${phase.borderColor} `}>
-                                                    <span className={`text-[11px] font-black uppercase tracking-wider ${phase.textColor} ${phase.bgBadge} w - fit px - 2 py - 0.5 rounded`}>
-                                                        Phase {idx + 1}
-                                                    </span>
-                                                    <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight">
-                                                        {phase.id.replace(/^\d+\.\s*/, '')}
-                                                    </h4>
-                                                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
-                                                        {phase.description}
-                                                    </p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
 
                         {/* Category Progress Overview */}
                         {Object.keys(categoryStats).length > 0 && (
@@ -430,44 +333,57 @@ export default function KanbanBoardClient({
                             </div>
                         )}
 
-                        {/* Sub-Header: Actions & View Mode Toggle */}
+                        {/* Sub-Header: Actions */}
                         <div className="flex items-center justify-between px-4 sm:px-0 mb-2 w-full">
-                            <button
-                                onClick={() => {
-                                    const title = window.prompt("Enter task title:", "New Task");
-                                    if (title) {
-                                        startTransition(() => {
-                                            createTaskAction(projectId, title);
-                                        });
-                                    }
-                                }}
-                                disabled={isPending}
-                                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
-                            >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                </svg>
-                                Add Task
-                            </button>
-
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">View By:</span>
-                                <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex inline-flex shadow-inner">
+                            {showAddTask ? (
+                                <form
+                                    className="flex items-center gap-2"
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        if (newTaskTitle.trim()) {
+                                            startTransition(async () => {
+                                                await createTaskAction(projectId, newTaskTitle.trim(), '수동');
+                                                setNewTaskTitle('');
+                                                setShowAddTask(false);
+                                            });
+                                        }
+                                    }}
+                                >
+                                    <input
+                                        type="text"
+                                        autoFocus
+                                        value={newTaskTitle}
+                                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                                        placeholder="태스크 제목 입력..."
+                                        className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64"
+                                    />
                                     <button
-                                        onClick={() => setViewMode('status')}
-                                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'status' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'} `}
+                                        type="submit"
+                                        disabled={isPending || !newTaskTitle.trim()}
+                                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
                                     >
-                                        Status
+                                        추가
                                     </button>
                                     <button
-                                        onClick={() => setViewMode('phase')}
-                                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1 ${viewMode === 'phase' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'} `}
+                                        type="button"
+                                        onClick={() => { setShowAddTask(false); setNewTaskTitle(''); }}
+                                        className="px-3 py-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium rounded-lg transition-colors"
                                     >
-                                        <Activity className="w-3.5 h-3.5" />
-                                        Phase Swimlanes
+                                        취소
                                     </button>
-                                </div>
-                            </div>
+                                </form>
+                            ) : (
+                                <button
+                                    onClick={() => setShowAddTask(true)}
+                                    disabled={isPending}
+                                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Add Task
+                                </button>
+                            )}
                         </div>
 
                         {/* Board */}
@@ -478,167 +394,46 @@ export default function KanbanBoardClient({
                                         <div className="absolute inset-0 z-50 bg-white/10 dark:bg-slate-900/10 pointer-events-none rounded-2xl backdrop-blur-[1px]" />
                                     )}
 
-                                    {viewMode === 'status' ? (
-                                        /* STATUS VIEW (Original) */
-                                        <div className="flex gap-6 overflow-x-auto pb-4 snap-x custom-scrollbar min-h-[500px] w-full">
-                                            {columns.map(column => {
-                                                const columnTasks = filteredTasks.filter(t => t.status === column.id);
+                                    <div className="flex gap-6 overflow-x-auto pb-4 snap-x custom-scrollbar min-h-[500px] w-full">
+                                        {columns.map(column => {
+                                            const columnTasks = filteredTasks.filter(t => t.status === column.id);
 
-                                                return (
-                                                    <section key={column.id} className="snap-center shrink-0 flex flex-col w-80 md:w-[340px]">
-                                                        <div className="sticky top-0 z-10 p-4 border border-slate-200 dark:border-slate-800/50 bg-slate-100/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-t-2xl flex items-center justify-between shadow-sm">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`w-2.5 h-2.5 rounded-full ${column.color} shadow - sm dark: shadow - [0_0_8px_rgba(0, 0, 0, 0.5)]`}></span>
-                                                                <h2 className={`font-bold tracking-wide text-sm ${column.text} `}>{column.label}</h2>
-                                                            </div>
-                                                            <span className="text-xs font-semibold bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full shadow-sm">
-                                                                {columnTasks.length}
-                                                            </span>
+                                            return (
+                                                <section key={column.id} className="snap-center shrink-0 flex flex-col w-80 md:w-[340px]">
+                                                    <div className="sticky top-0 z-10 p-4 border border-slate-200 dark:border-slate-800/50 bg-slate-100/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-t-2xl flex items-center justify-between shadow-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`w-2.5 h-2.5 rounded-full ${column.color} shadow-sm`}></span>
+                                                            <h2 className={`font-bold tracking-wide text-sm ${column.text}`}>{column.label}</h2>
                                                         </div>
+                                                        <span className="text-xs font-semibold bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full shadow-sm">
+                                                            {columnTasks.length}
+                                                        </span>
+                                                    </div>
 
-                                                        <Droppable droppableId={column.id}>
-                                                            {(provided, snapshot) => (
-                                                                <div
-                                                                    {...provided.droppableProps}
-                                                                    ref={provided.innerRef}
-                                                                    className={`flex flex-col pt-3 bg-slate-50/50 dark:bg-slate-900/20 px-3 pb-3 rounded-b-2xl border-x border-b border-slate-200 dark:border-slate-800/50 h-full min-h-[120px] transition-colors ${snapshot.isDraggingOver ? 'bg-slate-100/80 dark:bg-slate-800/40' : ''} `}
-                                                                >
-                                                                    {columnTasks.length === 0 && !snapshot.isDraggingOver ? (
-                                                                        <div className="h-24 flex items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-800/80 rounded-xl bg-white/50 dark:bg-slate-800/20">
-                                                                            <span className="text-sm text-slate-500 dark:text-slate-600 font-medium tracking-wide">Empty list</span>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="flex flex-col space-y-3">
-                                                                            {columnTasks.map((task, index) => renderTaskCard(task, index))}
-                                                                        </div>
-                                                                    )}
-                                                                    {provided.placeholder}
-                                                                </div>
-                                                            )}
-                                                        </Droppable>
-                                                    </section>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        /* PHASE SWIMLANES VIEW */
-                                        <div className="flex flex-col gap-10 pb-10 min-w-max md:min-w-0">
-                                            {[...VIBE_PHASES, { id: 'Unassigned', title: '분류되지 않음 (Unassigned)', description: '', criteria: '', borderColor: 'border-slate-200 dark:border-slate-800', textColor: 'text-slate-500', bgBadge: 'bg-slate-100 dark:bg-slate-800', color: '' }].map((phaseMeta) => {
-                                                const phaseKey = phaseMeta.id;
-
-                                                // Include tasks matching this phase. Treat empty or unlisted phrase as 'Unassigned'.
-                                                const phaseTasks = filteredTasks.filter(t => {
-                                                    if (phaseKey === 'Unassigned') {
-                                                        return !t.phase || !PHASES.includes(t.phase);
-                                                    }
-                                                    return t.phase === phaseKey;
-                                                });
-
-                                                // Only show 'Unassigned' if there are tasks in it
-                                                if (phaseKey === 'Unassigned' && phaseTasks.length === 0) return null;
-
-                                                const doneCount = phaseTasks.filter(t => t.status === 'DONE').length;
-                                                const totalCount = phaseTasks.length;
-                                                const isPhaseComplete = totalCount > 0 && doneCount === totalCount;
-                                                const percentComplete = totalCount === 0 ? 0 : Math.round((doneCount / totalCount) * 100);
-
-                                                return (
-                                                    <div key={phaseKey} className={`bg-slate-50/30 dark:bg-slate-900/30 rounded-2xl border ${phaseMeta.borderColor} overflow - hidden shadow - sm relative transition - all duration - 300 ${isPhaseComplete ? 'ring-2 ring-emerald-400 dark:ring-emerald-500/50 shadow-emerald-500/10' : ''} `}>
-
-                                                        {/* Swimlane Header */}
-                                                        <div className={`bg-gradient-to-r ${phaseKey !== 'Unassigned' ? 'from-white dark:from-slate-900/90 to-slate-50 dark:to-slate-800/50' : 'bg-slate-100/80 dark:bg-slate-800/50'} px - 6 py - 5 border - b border - slate - 200 dark: border - slate - 800 / 60 flex flex - col md: flex - row md: items - center justify - between gap - 4`}>
-
-                                                            <div className="flex-1 flex flex-col gap-2 relative z-10">
-                                                                <div className="flex items-center gap-3">
-                                                                    <h3 className={`text-lg font-extrabold ${phaseKey !== 'Unassigned' ? phaseMeta.textColor : 'text-slate-800 dark:text-slate-200'} flex items - center gap - 2 tracking - tight`}>
-                                                                        {phaseKey !== 'Unassigned' ? <Map className="w-5 h-5 opacity-80" /> : <Activity className="w-5 h-5 opacity-50" />}
-                                                                        {phaseMeta.title}
-                                                                    </h3>
-                                                                    <span className="text-xs font-semibold bg-white dark:bg-slate-950 text-slate-500 px-2.5 py-1 rounded-full shadow-sm border border-slate-200 dark:border-slate-800">
-                                                                        총 {totalCount} 태스크
-                                                                    </span>
-                                                                    {isPhaseComplete && phaseKey !== 'Unassigned' && (
-                                                                        <span className="flex items-center gap-1 text-[11px] font-bold text-white bg-emerald-500 px-2.5 py-1 rounded-full shadow-md animate-in zoom-in slide-in-from-left-4 duration-500">
-                                                                            <CheckCircle2 className="w-3.5 h-3.5" /> 다음 단계로 이동 가능!
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                {phaseKey !== 'Unassigned' && (
-                                                                    <div className="flex flex-col gap-1 mt-1">
-                                                                        <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
-                                                                            <b className="font-semibold text-slate-700 dark:text-slate-300">목표: </b>{phaseMeta.description}
-                                                                        </p>
-                                                                        <p className="text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 font-medium mt-1 bg-indigo-50 dark:bg-indigo-900/20 w-fit px-2 py-1 rounded-md border border-indigo-100 dark:border-indigo-800">
-                                                                            <Target className="w-3.5 h-3.5" /> <b>완료 조건:</b> {phaseMeta.criteria}
-                                                                        </p>
+                                                    <Droppable droppableId={column.id}>
+                                                        {(provided, snapshot) => (
+                                                            <div
+                                                                {...provided.droppableProps}
+                                                                ref={provided.innerRef}
+                                                                className={`flex flex-col pt-3 bg-slate-50/50 dark:bg-slate-900/20 px-3 pb-3 rounded-b-2xl border-x border-b border-slate-200 dark:border-slate-800/50 h-full min-h-[120px] transition-colors ${snapshot.isDraggingOver ? 'bg-slate-100/80 dark:bg-slate-800/40' : ''}`}
+                                                            >
+                                                                {columnTasks.length === 0 && !snapshot.isDraggingOver ? (
+                                                                    <div className="h-24 flex items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-800/80 rounded-xl bg-white/50 dark:bg-slate-800/20">
+                                                                        <span className="text-sm text-slate-500 dark:text-slate-600 font-medium tracking-wide">Empty list</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex flex-col space-y-3">
+                                                                        {columnTasks.map((task, index) => renderTaskCard(task, index))}
                                                                     </div>
                                                                 )}
+                                                                {provided.placeholder}
                                                             </div>
-
-                                                            {/* Progress Indicator */}
-                                                            {phaseKey !== 'Unassigned' && totalCount > 0 && (
-                                                                <div className="w-full md:w-56 shrink-0 flex flex-col gap-2">
-                                                                    <div className="flex items-end justify-between text-sm">
-                                                                        <span className="font-bold text-slate-700 dark:text-slate-300">Phase 진척도</span>
-                                                                        <span className={`font-mono font-bold ${isPhaseComplete ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'} `}>{percentComplete}%</span>
-                                                                    </div>
-                                                                    <div className="w-full h-3 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
-                                                                        <div
-                                                                            className={`h-full rounded-full transition-all duration-1000 ease-out ${isPhaseComplete ? 'bg-gradient-to-r from-emerald-400 to-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-gradient-to-r ' + phaseMeta.color.split(' ')[0] + ' to-' + phaseMeta.color.split(' ')[0].replace('10', '40')} bg - opacity - 100`}
-                                                                            style={{ width: `${percentComplete}% ` }}
-                                                                        />
-                                                                    </div>
-                                                                    <span className="text-[10px] text-right text-slate-400 font-medium tracking-wide">
-                                                                        {doneCount} / {totalCount} 완료됨
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Swimlane Columns */}
-                                                        <div className="flex gap-4 p-4 overflow-x-auto min-h-[160px]">
-                                                            {columns.map(column => {
-                                                                const columnTasks = phaseTasks.filter(t => t.status === column.id);
-                                                                const droppableId = `${phaseKey}::${column.id} `;
-
-                                                                return (
-                                                                    <div key={column.id} className="flex-1 shrink-0 min-w-[280px] max-w-sm flex flex-col">
-                                                                        <div className="flex items-center justify-between mb-2 px-1">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className={`w-2 h-2 rounded-full ${column.color} `}></span>
-                                                                                <span className={`text-xs font-semibold ${column.text} `}>{column.label}</span>
-                                                                            </div>
-                                                                            <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">{columnTasks.length}</span>
-                                                                        </div>
-
-                                                                        <Droppable droppableId={droppableId}>
-                                                                            {(provided, snapshot) => (
-                                                                                <div
-                                                                                    {...provided.droppableProps}
-                                                                                    ref={provided.innerRef}
-                                                                                    className={`flex-1 flex flex-col rounded-xl border border-transparent transition-colors p-2 space-y-3
-                                                                                ${snapshot.isDraggingOver ? 'bg-indigo-50/50 border-indigo-200/50 dark:bg-indigo-900/10 dark:border-indigo-500/30' : 'bg-slate-100/30 dark:bg-slate-800/20'} `}
-                                                                                >
-                                                                                    {columnTasks.length === 0 && !snapshot.isDraggingOver && (
-                                                                                        <div className="h-full min-h-[80px] flex items-center justify-center border border-dashed border-slate-200 dark:border-slate-700 rounded-lg">
-                                                                                            <span className="text-xs text-slate-400">Empty</span>
-                                                                                        </div>
-                                                                                    )}
-
-                                                                                    {columnTasks.map((task, index) => renderTaskCard(task, index))}
-                                                                                    {provided.placeholder}
-                                                                                </div>
-                                                                            )}
-                                                                        </Droppable>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
+                                                        )}
+                                                    </Droppable>
+                                                </section>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </DragDropContext>
                         )}
@@ -685,7 +480,7 @@ export default function KanbanBoardClient({
                                     onClick={() => setIsEditingDetails(!isEditingDetails)}
                                     className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-colors flex items-center gap-2 ${isEditingDetails ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'} shadow - sm`}
                                 >
-                                    {isEditingDetails ? <><CheckCircle2 className="w-4 h-4" /> Editing</> : <><Edit2 className="w-4 h-4" /> Edit Content</>}
+                                    {isEditingDetails ? <><CheckCircle2 className="w-4 h-4" /> 수정 중</> : <><Edit2 className="w-4 h-4" /> 내용 수정</>}
                                 </button>
                                 <div className="w-px h-6 bg-slate-200 dark:bg-slate-700"></div>
                                 <button
@@ -710,13 +505,13 @@ export default function KanbanBoardClient({
                                             <div className="flex flex-col gap-3">
                                                 <label className="text-sm font-bold text-amber-700 dark:text-amber-500 flex items-center gap-2">
                                                     <Activity className="w-4 h-4" />
-                                                    Work Context
+                                                    작업 내용
                                                 </label>
                                                 <textarea
                                                     value={editForm.description}
                                                     onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
                                                     className="w-full min-h-[200px] p-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-900/10 text-slate-700 dark:text-slate-200 focus:bg-amber-50 dark:focus:bg-amber-900/20 focus:ring-2 focus:ring-amber-500/50 outline-none text-[15px] leading-relaxed transition-all placeholder:text-amber-700/30 dark:placeholder:text-amber-500/30 font-sans"
-                                                    placeholder="Task instructions, context, current state, or code references..."
+                                                    placeholder="작업 지시, 컨텍스트, 현재 상태, 코드 참조 및 에러 로그 등..."
                                                 />
                                             </div>
 
@@ -724,13 +519,13 @@ export default function KanbanBoardClient({
                                             <div className="flex flex-col gap-3">
                                                 <label className="text-sm font-bold text-emerald-700 dark:text-emerald-500 flex items-center gap-2">
                                                     <CheckCircle2 className="w-4 h-4" />
-                                                    Resolution
+                                                    작업 결과
                                                 </label>
                                                 <textarea
                                                     value={editForm.afterWork}
                                                     onChange={(e) => setEditForm(prev => ({ ...prev, afterWork: e.target.value }))}
                                                     className="w-full min-h-[200px] p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-900/10 text-slate-700 dark:text-slate-200 focus:bg-emerald-50 dark:focus:bg-emerald-900/20 focus:ring-2 focus:ring-emerald-500/50 outline-none text-[15px] leading-relaxed transition-all placeholder:text-emerald-700/30 dark:placeholder:text-emerald-500/30 font-sans"
-                                                    placeholder="How the task instructions were carried out, implemented changes, PR links, or resolution notes..."
+                                                    placeholder="수행된 작업, 해결 방법, 주요 코드 변경점 또는 배포/PR 링크 등..."
                                                 />
                                             </div>
                                         </div>
@@ -743,11 +538,11 @@ export default function KanbanBoardClient({
                                                     <div className="w-2 h-2 rounded-full bg-amber-500"></div>
                                                 </div>
                                                 <div className="flex flex-col gap-3 group">
-                                                    <h3 className="text-sm font-bold text-amber-700 dark:text-amber-500 tracking-wider">Work Context</h3>
+                                                    <h3 className="text-sm font-bold text-amber-700 dark:text-amber-500 tracking-wider">작업 내용</h3>
                                                     {editForm.description ? (
                                                         <details className="bg-amber-50/50 dark:bg-amber-900/10 p-5 rounded-2xl border border-amber-100 dark:border-amber-900/30 group/details open:bg-amber-50 dark:open:bg-amber-900/20 transition-colors shadow-sm" open>
                                                             <summary className="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer list-none flex items-center justify-between outline-none">
-                                                                <span className="flex items-center gap-2">Click to expand context <span className="text-xs font-normal text-slate-500">({editForm.description.length} characters)</span></span>
+                                                                <span className="flex items-center gap-2">작업 내용 펼치기 <span className="text-xs font-normal text-slate-500">({editForm.description.length}자)</span></span>
                                                                 <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center group-open/details:rotate-180 transition-transform">
                                                                     <svg className="w-4 h-4 text-amber-700 dark:text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                                                 </div>
@@ -757,7 +552,7 @@ export default function KanbanBoardClient({
                                                             </div>
                                                         </details>
                                                     ) : (
-                                                        <p className="text-sm text-slate-400 italic">No work context provided. Click <button onClick={() => setIsEditingDetails(true)} className="text-indigo-500 hover:underline">Edit Content</button> to add instructions and context.</p>
+                                                        <p className="text-sm text-slate-400 italic">설명이 제공되지 않았습니다. <button onClick={() => setIsEditingDetails(true)} className="text-indigo-500 hover:underline">내용 수정</button>을 클릭하여 설명과 컨텍스트를 추가하세요.</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -768,11 +563,11 @@ export default function KanbanBoardClient({
                                                     <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                                                 </div>
                                                 <div className="flex flex-col gap-3 group">
-                                                    <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-500 tracking-wider">Resolution</h3>
+                                                    <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-500 tracking-wider">작업 결과</h3>
                                                     {editForm.afterWork ? (
                                                         <details className="bg-emerald-50/50 dark:bg-emerald-900/10 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 group/details open:bg-emerald-50 dark:open:bg-emerald-900/20 transition-colors shadow-sm" open>
                                                             <summary className="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer list-none flex items-center justify-between outline-none">
-                                                                <span className="flex items-center gap-2">Click to expand resolution <span className="text-xs font-normal text-slate-500">({editForm.afterWork.length} characters)</span></span>
+                                                                <span className="flex items-center gap-2">작업 결과 펼치기 <span className="text-xs font-normal text-slate-500">({editForm.afterWork.length}자)</span></span>
                                                                 <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center group-open/details:rotate-180 transition-transform">
                                                                     <svg className="w-4 h-4 text-emerald-700 dark:text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                                                 </div>
@@ -782,7 +577,7 @@ export default function KanbanBoardClient({
                                                             </div>
                                                         </details>
                                                     ) : (
-                                                        <p className="text-sm text-slate-400 italic">No resolution provided.</p>
+                                                        <p className="text-sm text-slate-400 italic">제공된 작업 결과가 없습니다.</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -831,7 +626,7 @@ export default function KanbanBoardClient({
                                             disabled={isSaving}
                                         >
                                             {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />}
-                                            Save Changes
+                                            변경사항 저장
                                         </button>
 
                                         {/* MCP Sync Button */}
@@ -874,12 +669,12 @@ export default function KanbanBoardClient({
                                             {isSyncing ? (
                                                 <>
                                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                                    <span>Syncing...</span>
+                                                    <span>동기화 중...</span>
                                                 </>
                                             ) : (
                                                 <>
                                                     <Sparkles className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                                                    <span>Sync from DB</span>
+                                                    <span>DB 동기화</span>
                                                 </>
                                             )}
                                             {isSyncing && (
@@ -907,13 +702,13 @@ export default function KanbanBoardClient({
                                         )}
 
                                         <p className="text-xs text-center text-slate-500 dark:text-slate-400 font-medium">
-                                            Auto-saved when modified via MCP
+                                            MCP를 통해 업데이트 시 자동 저장됩니다
                                         </p>
                                     </div>
 
                                     {/* Status Change */}
                                     <div>
-                                        <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Status</h4>
+                                        <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">상태</h4>
                                         <div className="relative group/status flex">
                                             <select
                                                 value={selectedTaskDetails.status}
@@ -944,14 +739,14 @@ export default function KanbanBoardClient({
 
                                     {/* Metadata Timeline */}
                                     <div className="flex-1">
-                                        <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Timeline</h4>
+                                        <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">타임라인</h4>
                                         <div className="relative pl-3 border-l-2 border-slate-200 dark:border-slate-700 flex flex-col gap-6">
 
                                             {/* Created */}
                                             <div className="relative">
                                                 <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-slate-50 dark:ring-slate-900" />
                                                 <div className="flex flex-col gap-1 text-sm">
-                                                    <span className="font-semibold text-slate-700 dark:text-slate-300">Created</span>
+                                                    <span className="font-semibold text-slate-700 dark:text-slate-300">생성일</span>
                                                     <span className="text-slate-500 dark:text-slate-400 text-xs">
                                                         {new Date(selectedTaskDetails.created_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' })}
                                                     </span>
@@ -962,11 +757,11 @@ export default function KanbanBoardClient({
                                             <div className={`relative ${!selectedTaskDetails.started_at ? 'opacity-40 grayscale' : ''} `}>
                                                 <div className={`absolute-left-[17px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-slate-50 dark:ring-slate-900 ${selectedTaskDetails.started_at ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-600'} `} />
                                                 <div className="flex flex-col gap-1 text-sm">
-                                                    <span className={`font-semibold ${selectedTaskDetails.started_at ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'} `}>Started</span>
+                                                    <span className={`font-semibold ${selectedTaskDetails.started_at ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'} `}>시작일</span>
                                                     <span className="text-slate-500 dark:text-slate-400 text-xs text-balance">
                                                         {selectedTaskDetails.started_at
                                                             ? new Date(selectedTaskDetails.started_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' })
-                                                            : 'Not started yet'
+                                                            : '아직 시작되지 않음'
                                                         }
                                                     </span>
                                                 </div>
@@ -976,11 +771,11 @@ export default function KanbanBoardClient({
                                             <div className={`relative ${!selectedTaskDetails.completed_at ? 'opacity-40 grayscale' : ''} `}>
                                                 <div className={`absolute-left-[17px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-slate-50 dark:ring-slate-900 ${selectedTaskDetails.completed_at ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'} `} />
                                                 <div className="flex flex-col gap-1 text-sm">
-                                                    <span className={`font-semibold ${selectedTaskDetails.completed_at ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'} `}>Completed</span>
+                                                    <span className={`font-semibold ${selectedTaskDetails.completed_at ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'} `}>완료일</span>
                                                     <span className="text-slate-500 dark:text-slate-400 text-xs text-balance">
                                                         {selectedTaskDetails.completed_at
                                                             ? new Date(selectedTaskDetails.completed_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' })
-                                                            : 'Not completed yet'
+                                                            : '아직 완료되지 않음'
                                                         }
                                                     </span>
                                                 </div>
@@ -991,7 +786,7 @@ export default function KanbanBoardClient({
                                                 <div className="relative">
                                                     <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-slate-50 dark:ring-slate-900 bg-indigo-500" />
                                                     <div className="flex flex-col gap-1 text-sm">
-                                                        <span className="font-semibold text-indigo-700 dark:text-indigo-400">Last Updated By</span>
+                                                        <span className="font-semibold text-indigo-700 dark:text-indigo-400">최근 수정자</span>
                                                         <span className="text-slate-500 dark:text-slate-400 text-xs text-balance">
                                                             {selectedTaskDetails.updated_by}
                                                         </span>

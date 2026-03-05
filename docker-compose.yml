@@ -1,16 +1,55 @@
 version: '3.8'
 
+name: vibeplanner
+
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vibeplanner-postgres
+    environment:
+      - POSTGRES_USER=vibeplanner
+      - POSTGRES_PASSWORD=vibeplanner_secret
+      - POSTGRES_DB=vibeplanner
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U vibeplanner" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   web:
     build:
       context: ./web
       dockerfile: Dockerfile
-    container_name: dev_progress_web
+    container_name: vibeplanner-web
     ports:
-      - "3002:3002"
-    volumes:
-      - ./:/app/data
+      - "8183:8183"
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       - NODE_ENV=production
-      - PORT=3002
+      - PORT=8183
+      - DATABASE_URL=postgresql://vibeplanner:vibeplanner_secret@postgres:5432/vibeplanner
+
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vibeplanner-mcp
+    command: tail -f /dev/null
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://vibeplanner:vibeplanner_secret@postgres:5432/vibeplanner
+
+volumes:
+  pgdata:

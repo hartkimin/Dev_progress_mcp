@@ -24,7 +24,7 @@ export async function getMcpServerInfo() {
         ip,
         port: '-', // MCP over stdio doesn't use a traditional TCP port
         nodeVersion: process.version,
-        toolsCount: 6,
+        toolsCount: 18,
         os: `${os.type()} ${os.release()}`
     };
 }

@@ -16,6 +16,7 @@ const translations: Translations = {
     'workspace': { en: 'Workspace', ko: '워크스페이스' },
     'integrations': { en: 'Integrations', ko: '연동기능' },
     'settings': { en: 'Settings', ko: '설정' },
+    'loading': { en: 'Loading...', ko: '불러오는 중...' },
 
     // Sidebar
     'dashboard': { en: 'Dashboard', ko: '대시보드' },
@@ -28,12 +29,91 @@ const translations: Translations = {
     'expandSidebar': { en: 'Expand Sidebar', ko: '사이드바 열기' },
     'collapseSidebar': { en: 'Collapse Sidebar', ko: '사이드바 닫기' },
 
+    // Project View Tabs
+    'tabKanban': { en: 'Kanban', ko: '칸반보드' },
+    'tabCalendar': { en: 'Calendar', ko: '캘린더' },
+    'tabIssueTracker': { en: 'Issues', ko: '이슈 트래커' },
+    'tabArchitecture': { en: 'Architecture', ko: '아키텍처' },
+    'tabDatabase': { en: 'DB Schema', ko: 'DB 설계' },
+    'tabApiSpec': { en: 'API Spec', ko: 'API 명세' },
+    'tabCodeReview': { en: 'Code Review', ko: '코드 리뷰' },
+    'tabTest': { en: 'Tests', ko: '테스트' },
+    'tabEnvironment': { en: 'Infra', ko: '환경/인프라' },
+    'tabDeploy': { en: 'Deploy', ko: '배포' },
+    'tabAIContext': { en: 'AI Context', ko: 'AI 컨텍스트' },
+    'tabDecision': { en: 'Decisions', ko: '의사결정' },
+    'tabChangelog': { en: 'Changelog', ko: '변경이력' },
+    'catProject': { en: 'Project', ko: '프로젝트' },
+    'catDesign': { en: 'Design', ko: '설계' },
+    'catDevelopment': { en: 'Development', ko: '개발' },
+    'catAi': { en: 'AI Management', ko: 'AI 관리' },
+
+    // Calendar
+    'calToday': { en: 'Today', ko: '오늘' },
+    'calMoreItems': { en: 'more', ko: '개 더보기' },
+    'calTasks': { en: 'tasks', ko: '개 태스크' },
+    'monthNames': { en: 'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec', ko: '1월,2월,3월,4월,5월,6월,7월,8월,9월,10월,11월,12월' },
+    'dayNames': { en: 'Sun,Mon,Tue,Wed,Thu,Fri,Sat', ko: '일,월,화,수,목,금,토' },
+
+    // Notifications
+    'notifNewTask': { en: 'New Task', ko: '새 태스크 등록' },
+    'notifStarted': { en: 'Started', ko: '진행 시작' },
+    'notifReview': { en: 'Review Requested', ko: '리뷰 요청' },
+    'notifDone': { en: 'Completed', ko: '완료됨' },
+    'notifUpdate': { en: 'Updated', ko: '업데이트' },
+    'noNotifications': { en: 'No notifications.', ko: '알림이 없습니다.' },
+
+    // Time Ago
+    'timeJustNow': { en: 'Just now', ko: '방금 전' },
+    'timeMinAgo': { en: 'm ago', ko: '분 전' },
+    'timeHourAgo': { en: 'h ago', ko: '시간 전' },
+    'timeDayAgo': { en: 'd ago', ko: '일 전' },
+
+    // Activity View
+    'activityTitle': { en: 'Recent Activity', ko: '최근 활동' },
+    'noActivityItems': { en: 'No activity recorded yet.', ko: '아직 활동 내역이 없습니다.' },
+
+    // Language Picker
+    'langKorean': { en: 'Korean', ko: '한국어' },
+    'langEnglish': { en: 'English', ko: '영어' },
+
     // Theme Toggle & TopNav
     'lightMode': { en: 'Light Mode', ko: '라이트 모드' },
     'darkMode': { en: 'Dark Mode', ko: '다크 모드' },
     'systemTheme': { en: 'System Theme', ko: '시스템 테마' },
     'changeTheme': { en: 'Change Theme', ko: '테마 변경' },
     'languageToggle': { en: 'Switch to Korean', ko: 'Switch to English' },
+    'profileSettings': { en: 'Profile Settings', ko: '프로필 설정' },
+    'billing': { en: 'Billing & Plan', ko: '결제 및 요금제' },
+    'signOut': { en: 'Sign Out', ko: '로그아웃' },
+    'profileSettingsSubtitle': { en: 'Manage your personal information, preferences, and security settings.', ko: '개인 정보, 환경설정 및 보안 설정을 관리합니다.' },
+    'profileName': { en: 'Full Name', ko: '이름설정' },
+    'profileEmail': { en: 'Email Address', ko: '이메일 주소' },
+    'saveChanges': { en: 'Save Changes', ko: '변경사항 저장' },
+    'billingSubtitle': { en: 'Manage your subscription plan, payment methods, and billing history.', ko: '구독 요금제, 결제 수단 및 결제 내역을 관리합니다.' },
+    'currentPlan': { en: 'Current Plan', ko: '현재 요금제' },
+    'proPlanDesc': { en: 'You are on the Pro plan with all premium features unlocked.', ko: '프리미엄 기능이 모두 포함된 Pro 요금제를 사용 중입니다.' },
+    'paymentMethod': { en: 'Payment Method', ko: '결제 수단' },
+    'updatePayment': { en: 'Update Payment Method', ko: '결제 수단 업데이트' },
+    'invoiceHistory': { en: 'Invoice History', ko: '청구 내역' },
+    'signedOutMsg': { en: 'You have been signed out successfully.', ko: '성공적으로 로그아웃 되었습니다.' },
+
+    // Settings (Security & Notifications)
+    'generalSettings': { en: 'General', ko: '일반' },
+    'security': { en: 'Security', ko: '보안' },
+    'notifications': { en: 'Notifications', ko: '알림' },
+    'profileInfo': { en: 'Profile Information', ko: '프로필 정보' },
+    'securitySettings': { en: 'Security Settings', ko: '보안 설정' },
+    'password': { en: 'Password', ko: '비밀번호' },
+    'twoFactorAuth': { en: 'Two-Factor Authentication (2FA)', ko: '2단계 인증 (2FA)' },
+    'enable': { en: 'Enable', ko: '활성화' },
+    'notificationPreferences': { en: 'Notification Preferences', ko: '알림 환경설정' },
+    'emailAlerts': { en: 'Email Alerts', ko: '이메일 알림' },
+    'appAlerts': { en: 'In-App Notifications', ko: '앱 내 알림' },
+    'criticalAlerts': { en: 'Critical Security Alerts', ko: '중요 보안 알림' },
+    'markAllAsRead': { en: 'Mark all as read', ko: '모두 읽음 처리' },
+    'viewAllNotifications': { en: 'View Notification Settings', ko: '알림 설정 보기' },
+
 
     // Activity Page
     'noActivityYet': { en: 'No activity yet.', ko: '활동 내역이 없습니다.' },
@@ -114,6 +194,22 @@ const translations: Translations = {
     'toolCreateTask': { en: 'Add new tasks to the TODO column.', ko: 'TODO 열에 새 작업을 추가합니다.' },
     'toolUpdateTaskStatus': { en: 'Move a task across swimlanes.', ko: '스윔레인 간 작업을 이동합니다.' },
     'toolUpdateTaskDetails': { en: 'Modify descriptions & work logs.', ko: '설명 및 작업 로그를 수정합니다.' },
+    'toolGetProjectDocument': { en: 'Fetch a specific project document.', ko: '특정 프로젝트 문서를 가져옵니다.' },
+    'toolUpdateProjectDocument': { en: 'Update or create a project document.', ko: '프로젝트 문서를 업데이트하거나 생성합니다.' },
+    'toolGetProjectDocumentVersions': { en: 'Retrieve document version history.', ko: '문서 버전 기록을 검색합니다.' },
+    'toolRestoreProjectDocumentVersion': { en: 'Restore a document to an older version.', ko: '문서를 이전 버전으로 복원합니다.' },
+    'toolDeleteProject': { en: 'Delete a project and all related data.', ko: '프로젝트와 관련 데이터를 모두 삭제합니다.' },
+    'toolDeleteTask': { en: 'Delete a task and its comments.', ko: '태스크와 댓글을 삭제합니다.' },
+    'toolGetTask': { en: 'Retrieve detailed task information.', ko: '태스크 상세 정보를 조회합니다.' },
+    'toolAddComment': { en: 'Add a comment to a task.', ko: '태스크에 코멘트를 추가합니다.' },
+    'toolGetComments': { en: 'Retrieve all comments on a task.', ko: '태스크의 모든 코멘트를 조회합니다.' },
+    'toolUpdateProject': { en: 'Update project name or description.', ko: '프로젝트 이름이나 설명을 수정합니다.' },
+    'toolGetAnalytics': { en: 'Retrieve project & task analytics.', ko: '프로젝트 및 태스크 통계를 조회합니다.' },
+    'toolGetRecentTasks': { en: 'Fetch recently updated tasks.', ko: '최근 업데이트된 태스크를 조회합니다.' },
+    'toolCategoryProject': { en: 'Project Management', ko: '프로젝트 관리' },
+    'toolCategoryTask': { en: 'Task Management', ko: '태스크 관리' },
+    'toolCategoryDocument': { en: 'Document Management', ko: '문서 관리' },
+    'toolCategoryAnalytics': { en: 'Analytics & Overview', ko: '분석 & 개요' },
 };
 
 interface I18nContextType {

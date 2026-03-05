@@ -4,19 +4,19 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTransition, useState } from 'react';
 import ProjectActions from './ProjectActions';
-import LiveSyncIndicator from './LiveSyncIndicator';
 import { useTranslation } from '@/lib/i18n';
 import type { Project } from '@/lib/db';
 import { createProjectAction } from '@/app/actions';
 
-function CreateProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate: (name: string, desc: string) => void }) {
+function CreateProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate: (name: string, desc: string, mode: 'newbie' | 'import') => void }) {
     const [name, setName] = useState('');
     const [desc, setDesc] = useState('');
+    const [mode, setMode] = useState<'newbie' | 'import'>('newbie');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!name.trim()) return;
-        onCreate(name.trim(), desc.trim());
+        onCreate(name.trim(), desc.trim(), mode);
     };
 
     return (
@@ -53,11 +53,39 @@ function CreateProjectModal({ onClose, onCreate }: { onClose: () => void; onCrea
                             value={desc}
                             onChange={e => setDesc(e.target.value)}
                             placeholder="프로젝트에 대한 간단한 설명..."
-                            rows={3}
+                            rows={2}
                             className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
                         />
                     </div>
-                    <div className="flex gap-3 pt-1">
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            시작 모드
+                        </label>
+                        <div className="space-y-2">
+                            <label className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${mode === 'newbie' ? 'bg-indigo-50/50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                                <div className="flex h-5 items-center">
+                                    <input type="radio" checked={mode === 'newbie'} onChange={() => setMode('newbie')} className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-600" />
+                                </div>
+                                <div className="ml-3">
+                                    <span className="block text-sm font-medium text-slate-900 dark:text-white">초보자 가이드 모드 (Complete Newbie)</span>
+                                    <span className="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">Vibe Coding 5단계 템플릿 태스크가 자동으로 생성됩니다.</span>
+                                </div>
+                            </label>
+
+                            <label className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${mode === 'import' ? 'bg-indigo-50/50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                                <div className="flex h-5 items-center">
+                                    <input type="radio" checked={mode === 'import'} onChange={() => setMode('import')} className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-600" />
+                                </div>
+                                <div className="ml-3">
+                                    <span className="block text-sm font-medium text-slate-900 dark:text-white">기존 문서 연동 모드 (Import Data)</span>
+                                    <span className="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">비어있는 상태로 생성하며, MCP를 통해 AI가 기존 문서를 동기화합니다.</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
                         <button
                             type="button"
                             onClick={onClose}
@@ -84,10 +112,10 @@ function CreateProjectButton() {
     const [isPending, startTransition] = useTransition();
     const [showModal, setShowModal] = useState(false);
 
-    const handleCreate = (name: string, desc: string) => {
+    const handleCreate = (name: string, desc: string, mode: 'newbie' | 'import') => {
         setShowModal(false);
         startTransition(async () => {
-            const result = await createProjectAction(name, desc);
+            const result = await createProjectAction(name, desc, mode);
             if (result.success) {
                 router.push(`/project/${result.id}`);
             }
@@ -128,7 +156,7 @@ export default function DashboardContent({ projects }: { projects: Project[] }) 
 
     return (
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <header className="mb-12 border-b border-slate-200/60 dark:border-slate-800/60 pb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4 backdrop-blur-sm">
+            <header className="relative z-50 mb-12 border-b border-slate-200/60 dark:border-slate-800/60 pb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4 backdrop-blur-sm">
                 <div>
                     <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-cyan-500 dark:from-indigo-400 dark:to-cyan-400">
                         {t('developerConsole') || "Developer Console"}
@@ -137,16 +165,15 @@ export default function DashboardContent({ projects }: { projects: Project[] }) 
                         {t('developerConsoleSubtitle') || "Real-time synchronization with MCP local context. Track your coding progress effortlessly."}
                     </p>
                 </div>
-                <LiveSyncIndicator />
             </header>
 
             <section>
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
                     <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
                         <span className="w-2.5 h-8 bg-gradient-to-b from-indigo-500 to-cyan-500 rounded-full shadow-lg shadow-indigo-500/20 inline-block"></span>
                         {t('activeProjects') || "Active Projects"}
                     </h2>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-3">
                         <CreateProjectButton />
                         <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
                             {projects.length} {projects.length === 1 ? (t('project') || "Project") : (t('projects') || "Projects")}

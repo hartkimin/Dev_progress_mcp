@@ -17,20 +17,14 @@ FROM node:20 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3002
+ENV PORT=8183
 ENV HOSTNAME="0.0.0.0"
-
-# Standard node image has necessary tools, no apk needed
-
-# Ensure data directory exists for volume mount
-RUN mkdir -p /app/data
-ENV DB_PATH=/app/data/database.sqlite
 
 # Copy necessary files for standalone output
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-EXPOSE 3002
+EXPOSE 8183
 
 CMD ["node", "server.js"]

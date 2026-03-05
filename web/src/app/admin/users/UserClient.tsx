@@ -11,6 +11,7 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
     const [newName, setNewName] = useState('');
     const [newEmail, setNewEmail] = useState('');
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -29,21 +30,15 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
         }
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (id === 'mock-user-1') {
-            alert(t('cannotDeleteOwner'));
-            return;
-        }
-        if (!confirm(t('confirmDeleteUser'))) {
-            return;
-        }
+    const handleDelete = async (id: string) => {
+        if (id === 'mock-user-1') return;
 
         setDeletingId(id);
         try {
             await deleteUser(id);
+            setConfirmingId(null);
         } catch (error) {
             console.error(t('failedToDeleteUser'), error);
-            alert(t('failedToDeleteUser'));
         } finally {
             setDeletingId(null);
         }
@@ -142,20 +137,44 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             {!isOwner && (
-                                                <button
-                                                    onClick={() => handleDelete(user.id, user.name)}
-                                                    disabled={deletingId === user.id}
-                                                    className="p-2 text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"
-                                                    title={t('removeUser')}
-                                                >
-                                                    {deletingId === user.id ? (
-                                                        <span className="w-5 h-5 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin inline-block"></span>
-                                                    ) : (
+                                                confirmingId === user.id ? (
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <span className="text-xs text-red-500 font-medium mr-1">{t('removeUser')}?</span>
+                                                        <button
+                                                            onClick={() => handleDelete(user.id)}
+                                                            disabled={deletingId === user.id}
+                                                            className="p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                                                            title="Confirm"
+                                                        >
+                                                            {deletingId === user.id ? (
+                                                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"></span>
+                                                            ) : (
+                                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setConfirmingId(null)}
+                                                            className="p-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 rounded-lg transition-colors"
+                                                            title="Cancel"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => setConfirmingId(user.id)}
+                                                        className="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"
+                                                        title={t('removeUser')}
+                                                    >
                                                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                         </svg>
-                                                    )}
-                                                </button>
+                                                    </button>
+                                                )
                                             )}
                                         </td>
                                     </tr>

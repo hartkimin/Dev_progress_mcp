@@ -19,6 +19,8 @@ VibePlanner guides you through a structured development pipeline:
 -   **MCP-Native**: First-class integration with AI coding assistants. Let your AI agent manage your tasks for you.
 -   **Kanban Board**: Visual task management with swimlanes (TODO, IN_PROGRESS, REVIEW, DONE).
 -   **Process Pipeline**: A visual stepper that automatically tracks which phase of the development lifecycle you're in.
+-   **Comprehensive Project Dashboard**: A restructured 4-category, 14-tab layout including Overview (Calendar, Activity, Health), Documentation (Architecture, Database, Workflow, API, AI Context, etc.), Tracking (Issue Tracker, Code Review), and CI/CD (Testing, Deployment).
+-   **Document Canvas Views**: Built-in canvas views supporting Markdown and auto-rendering zoomable Mermaid diagrams.
 -   **Multi-Language (i18n)**: Full support for English and Korean.
 -   **Dark/Light Mode**: Beautifully designed UI that respects your system theme.
 -   **Analytics**: Monitor project health, task distribution, and completion rates.
@@ -110,6 +112,7 @@ Now you can ask your AI assistant:
 - *"현재 진행 중인 프로젝트 목록을 보여줘."*
 - *"Architecture 단계에 'DB 스키마 설계' 작업을 추가해줘."*
 - *"칸반 보드 상태를 확인해줄래?"*
+- *"ERD를 Mermaid 형식으로 작성해서 이 프로젝트의 DATABASE 문서에 저장해줘."*
 
 ---
 

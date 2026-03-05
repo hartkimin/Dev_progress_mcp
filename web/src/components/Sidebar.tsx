@@ -24,14 +24,12 @@ export default function Sidebar() {
 
     const workspaceItems = [
         { name: t('dashboard'), href: '/', icon: LayoutDashboard },
-        { name: t('recentActivity'), href: '/activity', icon: Activity },
     ];
 
     const settingsItems = [
         { name: t('integrations'), href: '/admin/integrations', icon: Blocks },
         { name: t('users'), href: '/admin/users', icon: Users },
         { name: t('apiKeys'), href: '/admin/api-keys', icon: Key },
-        { name: t('analytics'), href: '/admin/analytics', icon: BarChart3 },
     ];
 
     const projectIdMatch = pathname.match(/^\/project\/([^\/]+)/);
@@ -103,33 +101,6 @@ export default function Sidebar() {
                 </div>
 
             </nav>
-
-            {/* Profile Footer */}
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-900 flex flex-col gap-3">
-                <div className={`flex items-center space-x-3 bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-sm transition-colors hover:border-indigo-300 dark:hover:border-indigo-500/50 cursor-pointer ${isCollapsed ? 'justify-center p-2' : 'px-4 py-3'}`}>
-                    {isCollapsed ? (
-                        <div className="flex flex-col items-center">
-                            <div className="text-indigo-500 mb-1" title={t('adminDeveloper')}>
-                                <UserCircle2 size={28} strokeWidth={1.5} />
-                            </div>
-                            <span className="text-[9px] font-mono text-slate-400 font-bold">v0.1</span>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow-md shrink-0">
-                                AD
-                            </div>
-                            <div className="flex-1 overflow-hidden min-w-0 flex flex-col">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{t('adminDeveloper')}</p>
-                                    <span className="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">v0.1</span>
-                                </div>
-                                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 truncate">{t('proTierActive')}</p>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </div>
         </aside>
     );
 }

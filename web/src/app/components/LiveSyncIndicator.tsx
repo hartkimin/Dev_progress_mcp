@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getMcpServerInfo } from '@/app/actions/mcp';
+import { usePathname } from 'next/navigation';
 
 interface McpInfo {
     status: string;
@@ -11,10 +12,13 @@ interface McpInfo {
     os: string;
     toolsCount: number;
 }
+import { Server } from 'lucide-react';
 
 export default function LiveSyncIndicator() {
     const [mcpInfo, setMcpInfo] = useState<McpInfo | null>(null);
     const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const pathname = usePathname();
 
     useEffect(() => {
         getMcpServerInfo()
@@ -22,18 +26,38 @@ export default function LiveSyncIndicator() {
             .catch(err => console.error("Failed to fetch MCP Info:", err));
     }, []);
 
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen]);
+
+    useEffect(() => {
+        setIsOpen(false);
+    }, [pathname]);
+
     return (
-        <div className="relative z-50">
+        <div className="relative z-50 flex items-center" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 text-xs font-mono text-slate-600 dark:text-slate-500 bg-white dark:bg-slate-900/50 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none self-start md:self-auto hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                title="MCP Server Status"
+                className="relative flex justify-center items-center p-2 rounded-full transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-indigo-500 dark:hover:text-indigo-400 text-slate-600 dark:text-slate-300"
             >
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Live Sync Active
+                <Server size={18} strokeWidth={2} />
+                <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full border border-white dark:border-slate-900 ${mcpInfo && mcpInfo.status === 'Online' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 shadow-xl rounded-xl p-4 overflow-hidden origin-top-right animate-in fade-in zoom-in duration-200">
+                <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 shadow-xl rounded-xl p-4 overflow-hidden origin-top-right animate-in fade-in zoom-in duration-200">
                     <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 border-b border-slate-100 dark:border-slate-700 pb-2 flex items-center justify-between">
                         MCP Server Details
                         <div className={`w-1.5 h-1.5 rounded-full ${mcpInfo && mcpInfo.status === 'Online' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>

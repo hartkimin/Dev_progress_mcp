@@ -31,25 +31,31 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         tools: [
             {
                 name: "create_project",
-                description: "Create a new project to track development progress.",
+                description: "개발 진행 상황을 추적하기 위한 새 프로젝트를 생성합니다.",
                 inputSchema: {
                     type: "object",
                     properties: {
                         name: {
                             type: "string",
-                            description: "The name of the project.",
+                            description: "프로젝트의 이름입니다.",
                         },
                         description: {
                             type: "string",
-                            description: "A small description of what the project is about.",
+                            description: "프로젝트에 대한 간단한 설명입니다.",
                         },
+                        mode: {
+                            type: "string",
+                            description: "가이드 태스크와 함께 완전히 새로 시작하려면 'newbie'를 사용하세요. 기존 프로젝트 상태를 가져오기 위한 빈 프로젝트를 생성하려면 'import'를 사용하세요.",
+                            enum: ["newbie", "import"],
+                            default: "newbie"
+                        }
                     },
                     required: ["name"],
                 },
             },
             {
                 name: "list_projects",
-                description: "List all ongoing projects.",
+                description: "진행 중인 모든 프로젝트를 나열합니다.",
                 inputSchema: {
                     type: "object",
                     properties: {},
@@ -57,43 +63,51 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             {
                 name: "create_task",
-                description: "Add a new task to a project.",
+                description: "프로젝트에 새 태스크를 추가합니다.",
                 inputSchema: {
                     type: "object",
                     properties: {
                         projectId: {
                             type: "string",
-                            description: "The ID of the project.",
+                            description: "프로젝트의 ID입니다.",
                         },
                         title: {
                             type: "string",
-                            description: "Title of the task.",
+                            description: "태스크의 제목입니다.",
                         },
                         category: {
                             type: "string",
-                            description: "Optional category of the task used for grouping and displaying progress (e.g. 'Backend API', 'Frontend App').",
+                            description: "그룹화 및 진행 상황 표시에 사용되는 태스크의 선택적 카테고리입니다 (예: 'Backend API', 'Frontend App').",
                         },
                         phase: {
                             type: "string",
-                            description: "Vibe Coding phase of the task (e.g. 'Ideation & Requirements', 'Architecture & Design', 'Implementation', 'Testing & QA', 'Deployment & Review')",
+                            description: "태스크의 Vibe Coding 단계입니다 (예: 'Ideation & Requirements', 'Architecture & Design', 'Implementation', 'Testing & QA', 'Deployment & Review').",
                         },
                         taskType: {
                             type: "string",
-                            description: "Type of task (e.g. 'Prompting', 'Coding', 'Review', 'Docs')",
+                            description: "태스크의 유형입니다 (예: 'Prompting', 'Coding', 'Review', 'Docs').",
                         },
                         scale: {
                             type: "string",
-                            description: "Scale of the task (e.g. 'Epic', 'Story', 'Task')",
+                            description: "태스크의 규모입니다 (예: 'Epic', 'Story', 'Task').",
                         },
                         description: {
                             type: "string",
-                            description: "Description of the task.",
+                            description: "태스크의 설명입니다.",
                         },
                         status: {
                             type: "string",
-                            description: "Initial status of the task.",
+                            description: "태스크의 초기 상태입니다.",
                             enum: ["TODO", "IN_PROGRESS", "REVIEW", "DONE"],
                             default: "TODO"
+                        },
+                        startDate: {
+                            type: "string",
+                            description: "달력 뷰에 유용한 태스크의 선택적 시작 날짜/시간(ISO 8601 문자열)입니다 (예: '2025-03-01T09:00:00Z').",
+                        },
+                        dueDate: {
+                            type: "string",
+                            description: "달력 뷰에 유용한 태스크의 선택적 마감 날짜/시간(ISO 8601 문자열)입니다.",
                         },
                     },
                     required: ["projectId", "title"],
@@ -101,17 +115,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             {
                 name: "update_task_status",
-                description: "Move a task across the Kanban board (update status).",
+                description: "칸반 보드에서 태스크를 이동합니다 (상태 업데이트).",
                 inputSchema: {
                     type: "object",
                     properties: {
                         taskId: {
                             type: "string",
-                            description: "The ID of the task.",
+                            description: "태스크의 ID입니다.",
                         },
                         status: {
                             type: "string",
-                            description: "New status of the task.",
+                            description: "태스크의 새로운 상태입니다.",
                             enum: ["TODO", "IN_PROGRESS", "REVIEW", "DONE"],
                         },
                     },
@@ -120,37 +134,45 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             {
                 name: "update_task_details",
-                description: "Update the detailed description, before work, and after work content of a task.",
+                description: "태스크의 상세 설명, 작업 전 내용 및 작업 후 내용을 업데이트합니다.",
                 inputSchema: {
                     type: "object",
                     properties: {
                         taskId: {
                             type: "string",
-                            description: "The ID of the task.",
+                            description: "태스크의 ID입니다.",
                         },
                         description: {
                             type: "string",
-                            description: "The main description or flow of the task.",
+                            description: "태스크의 주요 설명 또는 흐름입니다.",
                         },
                         beforeWork: {
                             type: "string",
-                            description: "Work Content (작업 내용). What the state or context was before the work started or what work is currently being done.",
+                            description: "Work Content (작업 내용). 작업이 시작되기 전의 상태 또는 컨텍스트, 혹은 현재 진행 중인 작업 내용입니다.",
                         },
                         afterWork: {
                             type: "string",
-                            description: "After Work Content (작업 후 내용). The outcome or results after the work is completed.",
+                            description: "After Work Content (작업 후 내용). 작업 완료 후의 결과물 또는 성과입니다.",
                         },
                         phase: {
                             type: "string",
-                            description: "Vibe Coding phase of the task (e.g. 'Ideation & Requirements', 'Architecture & Design', 'Implementation', 'Testing & QA', 'Deployment & Review')",
+                            description: "태스크의 Vibe Coding 단계입니다 (예: 'Ideation & Requirements', 'Architecture & Design', 'Implementation', 'Testing & QA', 'Deployment & Review').",
                         },
                         taskType: {
                             type: "string",
-                            description: "Type of task (e.g. 'Prompting', 'Coding', 'Review', 'Docs')",
+                            description: "태스크의 유형입니다 (예: 'Prompting', 'Coding', 'Review', 'Docs').",
                         },
                         scale: {
                             type: "string",
-                            description: "Scale of the task (e.g. 'Epic', 'Story', 'Task')",
+                            description: "태스크의 규모입니다 (예: 'Epic', 'Story', 'Task').",
+                        },
+                        startDate: {
+                            type: "string",
+                            description: "선택적 시작 날짜/시간(ISO 8601 문자열)입니다.",
+                        },
+                        dueDate: {
+                            type: "string",
+                            description: "선택적 마감 날짜/시간(ISO 8601 문자열)입니다.",
                         },
                     },
                     required: ["taskId"],
@@ -158,16 +180,226 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             {
                 name: "get_kanban_board",
-                description: "Retrieve the current Kanban board layout for a specific project.",
+                description: "특정 프로젝트의 현재 칸반 보드 레이아웃을 검색합니다.",
                 inputSchema: {
                     type: "object",
                     properties: {
                         projectId: {
                             type: "string",
-                            description: "The ID of the project.",
+                            description: "프로젝트의 ID입니다.",
                         },
                     },
                     required: ["projectId"],
+                },
+            },
+            {
+                name: "get_project_document",
+                description: "특정 프로젝트의 문서를 검색합니다. 지원 타입: ARCHITECTURE(시스템 구조), DATABASE(DB 스키마), WORKFLOW(워크플로우), API(API 명세), ENVIRONMENT(환경/인프라), CHANGELOG(변경 이력), DEPENDENCIES(의존성), DECISION(의사결정 기록), ISSUE_TRACKER(이슈 트래커), CODE_REVIEW(코드 리뷰), TEST(테스트 대시보드), DEPLOY(배포 내역), AI_CONTEXT(AI 컨텍스트), API_GUIDE(API 연동 가이드). 대시보드의 특정 뷰에서 JSON 또는 Markdown 형태로 렌더링됩니다.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        projectId: {
+                            type: "string",
+                            description: "프로젝트의 ID입니다.",
+                        },
+                        docType: {
+                            type: "string",
+                            description: "문서 유형입니다.",
+                            enum: ["ARCHITECTURE", "DATABASE", "WORKFLOW", "API", "ENVIRONMENT", "CHANGELOG", "DEPENDENCIES", "DECISION", "ISSUE_TRACKER", "CODE_REVIEW", "TEST", "DEPLOY", "AI_CONTEXT", "API_GUIDE"]
+                        }
+                    },
+                    required: ["projectId", "docType"],
+                },
+            },
+            {
+                name: "update_project_document",
+                description: "특정 프로젝트의 문서를 업데이트하거나 생성합니다. 일반 문서는 마크다운/Mermaid 구조이며, ISSUE_TRACKER/CODE_REVIEW/TEST/DEPLOY/AI_CONTEXT는 JSON 형식의 데이터를 문자열화하여 저장해야 합니다.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        projectId: {
+                            type: "string",
+                            description: "프로젝트의 ID입니다.",
+                        },
+                        docType: {
+                            type: "string",
+                            description: "문서 유형입니다.",
+                            enum: ["ARCHITECTURE", "DATABASE", "WORKFLOW", "API", "ENVIRONMENT", "CHANGELOG", "DEPENDENCIES", "DECISION", "ISSUE_TRACKER", "CODE_REVIEW", "TEST", "DEPLOY", "AI_CONTEXT", "API_GUIDE"]
+                        },
+                        content: {
+                            type: "string",
+                            description: "마크다운 형식의 문서 내용입니다."
+                        }
+                    },
+                    required: ["projectId", "docType", "content"],
+                },
+            },
+            {
+                name: "get_project_document_versions",
+                description: "특정 프로젝트 문서의 버전 기록을 검색합니다.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        projectId: {
+                            type: "string",
+                            description: "프로젝트의 ID입니다.",
+                        },
+                        docType: {
+                            type: "string",
+                            description: "문서 유형입니다.",
+                            enum: ["ARCHITECTURE", "DATABASE", "WORKFLOW", "API", "ENVIRONMENT", "CHANGELOG", "DEPENDENCIES", "DECISION", "ISSUE_TRACKER", "CODE_REVIEW", "TEST", "DEPLOY", "AI_CONTEXT", "API_GUIDE"]
+                        }
+                    },
+                    required: ["projectId", "docType"],
+                },
+            },
+            {
+                name: "restore_project_document_version",
+                description: "문서를 특정 과거 버전으로 복원합니다.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        projectId: {
+                            type: "string",
+                            description: "프로젝트의 ID입니다.",
+                        },
+                        docType: {
+                            type: "string",
+                            description: "문서 유형입니다.",
+                            enum: ["ARCHITECTURE", "DATABASE", "WORKFLOW", "API", "ENVIRONMENT", "CHANGELOG", "DEPENDENCIES", "DECISION", "ISSUE_TRACKER", "CODE_REVIEW", "TEST", "DEPLOY", "AI_CONTEXT", "API_GUIDE"]
+                        },
+                        versionId: {
+                            type: "string",
+                            description: "복원할 이전 버전의 식별자(ID)입니다."
+                        }
+                    },
+                    required: ["projectId", "docType", "versionId"],
+                },
+            },
+            {
+                name: "delete_project",
+                description: "프로젝트를 삭제합니다. 프로젝트에 포함된 모든 태스크, 코멘트, 문서도 함께 삭제됩니다.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        projectId: {
+                            type: "string",
+                            description: "삭제할 프로젝트의 ID입니다.",
+                        }
+                    },
+                    required: ["projectId"],
+                },
+            },
+            {
+                name: "delete_task",
+                description: "특정 태스크를 삭제합니다. 태스크에 달린 코멘트도 함께 삭제됩니다.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        taskId: {
+                            type: "string",
+                            description: "삭제할 태스크의 ID입니다.",
+                        }
+                    },
+                    required: ["taskId"],
+                },
+            },
+            {
+                name: "get_task",
+                description: "특정 태스크의 상세 정보를 조회합니다.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        taskId: {
+                            type: "string",
+                            description: "조회할 태스크의 ID입니다.",
+                        }
+                    },
+                    required: ["taskId"],
+                },
+            },
+            {
+                name: "add_comment",
+                description: "태스크에 코멘트를 추가합니다. 작업 진행 상황이나 논의 내용을 기록할 수 있습니다.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        taskId: {
+                            type: "string",
+                            description: "코멘트를 추가할 태스크의 ID입니다.",
+                        },
+                        author: {
+                            type: "string",
+                            description: "코멘트 작성자 이름입니다.",
+                        },
+                        content: {
+                            type: "string",
+                            description: "코멘트 내용입니다.",
+                        }
+                    },
+                    required: ["taskId", "content"],
+                },
+            },
+            {
+                name: "get_comments",
+                description: "특정 태스크에 달린 모든 코멘트를 조회합니다.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        taskId: {
+                            type: "string",
+                            description: "코멘트를 조회할 태스크의 ID입니다.",
+                        }
+                    },
+                    required: ["taskId"],
+                },
+            },
+            {
+                name: "update_project",
+                description: "프로젝트의 이름이나 설명을 수정합니다.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        projectId: {
+                            type: "string",
+                            description: "수정할 프로젝트의 ID입니다.",
+                        },
+                        name: {
+                            type: "string",
+                            description: "프로젝트의 새 이름입니다.",
+                        },
+                        description: {
+                            type: "string",
+                            description: "프로젝트의 새 설명입니다.",
+                        }
+                    },
+                    required: ["projectId"],
+                },
+            },
+            {
+                name: "get_analytics",
+                description: "프로젝트 및 태스크의 전체 통계를 조회합니다. 프로젝트 수, 태스크 수, 상태별 분포 등을 확인할 수 있습니다.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        projectId: {
+                            type: "string",
+                            description: "선택. 특정 프로젝트의 통계만 조회합니다.",
+                        }
+                    },
+                },
+            },
+            {
+                name: "get_recent_tasks",
+                description: "전체 프로젝트에서 최근 업데이트된 태스크를 조회합니다.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        limit: {
+                            type: "number",
+                            description: "반환할 태스크 수 (기본: 50)",
+                        }
+                    },
                 },
             }
         ],
@@ -284,7 +516,8 @@ ${mandatoryTasks.map(t => `- ${t}`).join('\n')}
                             type: "text",
                             text: basePromptInstructions("Phase 2: 아키텍처 설계 (Architecture)", [
                                 "프론트엔드/백엔드 기술 스택 선정 및 컴포넌트 아키텍처 설계",
-                                "데이터베이스 스키마(ERD) 설계",
+                                "update_project_document 툴을 사용하여 ARCHITECTURE 문서를 Mermaid 구조도로 시각화 업데이트",
+                                "update_project_document 툴을 사용하여 DATABASE 문서를 ERD 및 스키마 형태로 업데이트",
                                 "주요 API 엔드포인트 명세서 작성",
                                 "주요 화면 구성 및 UI/UX 와이어프레임 설계",
                                 "공통 상태 관리 및 디자인 시스템 정의"
@@ -359,8 +592,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
         switch (name) {
             case "create_project": {
-                const { name, description = "" } = args as Record<string, any>;
-                const id = await db.createProject(name, description);
+                const { name, description = "", mode = "newbie" } = args as Record<string, any>;
+                const id = await db.createProject(name, description, mode);
                 return {
                     content: [{ type: "text", text: `Project created successfully with ID: ${id}` }],
                 };
@@ -378,8 +611,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
 
             case "create_task": {
-                const { projectId, title, category = "", phase = "", taskType = "", scale = "", description = "", status = "TODO" } = args as Record<string, any>;
-                const id = await db.createTask(projectId, title, category, phase, taskType, scale, description, status);
+                const { projectId, title, category = "", phase = "", taskType = "", scale = "", description = "", status = "TODO", startDate = null, dueDate = null } = args as Record<string, any>;
+                const id = await db.createTask(projectId, title, category, phase, taskType, scale, description, status, startDate, dueDate);
                 return {
                     content: [{ type: "text", text: `Task created successfully with ID: ${id}` }],
                 };
@@ -397,8 +630,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
 
             case "update_task_details": {
-                const { taskId, description = "", beforeWork = "", afterWork = "", phase = "", taskType = "", scale = "" } = args as Record<string, any>;
-                const updated = await db.updateTaskDetails(taskId, description, beforeWork, afterWork, phase, taskType, scale, 'MCP Server');
+                const { taskId, description = "", beforeWork = "", afterWork = "", phase = "", taskType = "", scale = "", startDate, dueDate } = args as Record<string, any>;
+                const updated = await db.updateTaskDetails(taskId, description, beforeWork, afterWork, phase, taskType, scale, 'MCP Server', startDate, dueDate);
                 if (!updated) {
                     throw new McpError(ErrorCode.InvalidParams, `Task with ID ${taskId} not found or update failed.`);
                 }
@@ -454,6 +687,178 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 };
             }
 
+            case "get_project_document": {
+                const { projectId, docType } = args as Record<string, string>;
+                const doc = await db.getProjectDocument(projectId, docType);
+                if (!doc) {
+                    return { content: [{ type: "text", text: `해당 유형 생성이 필요합니다.` }] };
+                }
+                return {
+                    content: [{ type: "text", text: doc.content }],
+                };
+            }
+
+            case "update_project_document": {
+                const { projectId, docType, content } = args as Record<string, string>;
+                const updated = await db.updateProjectDocument(projectId, docType, content, "MCP Server");
+                if (!updated) {
+                    throw new McpError(ErrorCode.InternalError, "Failed to update project document.");
+                }
+                return {
+                    content: [{ type: "text", text: `Document ${docType} updated successfully.` }],
+                };
+            }
+
+            case "get_project_document_versions": {
+                const { projectId, docType } = args as Record<string, string>;
+                const versions = await db.getProjectDocumentVersions(projectId, docType);
+                if (versions.length === 0) {
+                    return { content: [{ type: "text", text: `해당 문서의 버전 기록이 없습니다.` }] };
+                }
+                const text = versions.map((v: any) => `Version ID: ${v.id} | Number: ${v.version_number} | Author: ${v.created_by} | Date: ${v.created_at}`).join('\n');
+                return {
+                    content: [{ type: "text", text: `Versions:\n${text}` }],
+                };
+            }
+
+            case "restore_project_document_version": {
+                const { projectId, docType, versionId } = args as Record<string, string>;
+                try {
+                    const restored = await db.restoreProjectDocumentVersion(projectId, docType, versionId, "MCP Server (Restore)");
+                    if (!restored) {
+                        throw new Error("Restore failed in DB.");
+                    }
+                    return {
+                        content: [{ type: "text", text: `Document ${docType} restored successfully to version ID ${versionId}.` }],
+                    };
+                } catch (e: any) {
+                    throw new McpError(ErrorCode.InternalError, `Failed to restore project document: ${e.message}`);
+                }
+            }
+
+            case "delete_project": {
+                const { projectId } = args as Record<string, string>;
+                const deleted = await db.deleteProject(projectId);
+                if (!deleted) {
+                    throw new McpError(ErrorCode.InvalidParams, `Project with ID ${projectId} not found or delete failed.`);
+                }
+                return {
+                    content: [{ type: "text", text: `Project ${projectId} deleted successfully.` }],
+                };
+            }
+
+            case "delete_task": {
+                const { taskId } = args as Record<string, string>;
+                const deleted = await db.deleteTask(taskId);
+                if (!deleted) {
+                    throw new McpError(ErrorCode.InvalidParams, `Task with ID ${taskId} not found or delete failed.`);
+                }
+                return {
+                    content: [{ type: "text", text: `Task ${taskId} deleted successfully.` }],
+                };
+            }
+
+            case "get_task": {
+                const { taskId } = args as Record<string, string>;
+                const task = await db.getTaskById(taskId);
+                if (!task) {
+                    throw new McpError(ErrorCode.InvalidParams, `Task with ID ${taskId} not found.`);
+                }
+                const taskInfo = [
+                    `ID: ${task.id}`,
+                    `Title: ${task.title}`,
+                    `Status: ${task.status}`,
+                    task.category ? `Category: ${task.category}` : null,
+                    task.phase ? `Phase: ${task.phase}` : null,
+                    task.task_type ? `Type: ${task.task_type}` : null,
+                    task.scale ? `Scale: ${task.scale}` : null,
+                    task.description ? `Description: ${task.description}` : null,
+                    task.before_work ? `Before Work: ${task.before_work}` : null,
+                    task.after_work ? `After Work: ${task.after_work}` : null,
+                    task.start_date ? `Start Date: ${task.start_date}` : null,
+                    task.due_date ? `Due Date: ${task.due_date}` : null,
+                    `Created: ${task.created_at}`,
+                    `Updated: ${task.updated_at}`,
+                ].filter(Boolean).join('\n');
+                return {
+                    content: [{ type: "text", text: taskInfo }],
+                };
+            }
+
+            case "add_comment": {
+                const { taskId, author = "MCP Server", content } = args as Record<string, string>;
+                const id = await db.addComment(taskId, author, content);
+                return {
+                    content: [{ type: "text", text: `Comment added successfully with ID: ${id}` }],
+                };
+            }
+
+            case "get_comments": {
+                const { taskId } = args as Record<string, string>;
+                const comments = await db.getComments(taskId);
+                if (comments.length === 0) {
+                    return { content: [{ type: "text", text: `No comments found for task ${taskId}.` }] };
+                }
+                const text = comments.map(c => `[${c.created_at}] ${c.author}: ${c.content}`).join('\n');
+                return {
+                    content: [{ type: "text", text: `Comments (${comments.length}):\n${text}` }],
+                };
+            }
+
+            case "update_project": {
+                const { projectId, name: newName, description: newDesc } = args as Record<string, string>;
+                const project = await db.getProjectById(projectId);
+                if (!project) {
+                    throw new McpError(ErrorCode.InvalidParams, `Project with ID ${projectId} not found.`);
+                }
+                const updated = await db.updateProject(
+                    projectId,
+                    newName || project.name,
+                    newDesc !== undefined ? newDesc : project.description
+                );
+                if (!updated) {
+                    throw new McpError(ErrorCode.InternalError, `Failed to update project.`);
+                }
+                return {
+                    content: [{ type: "text", text: `Project ${projectId} updated successfully.` }],
+                };
+            }
+
+            case "get_analytics": {
+                const { projectId } = (args || {}) as Record<string, string>;
+                const analytics = await db.getGlobalAnalytics(projectId);
+                const text = [
+                    `📊 Analytics Summary${projectId ? ` (Project: ${projectId})` : ' (Global)'}`,
+                    ``,
+                    `Total Projects: ${analytics.totalProjects}`,
+                    `Total Tasks: ${analytics.totalTasks}`,
+                    `Total Users: ${analytics.totalUsers}`,
+                    ``,
+                    `Tasks by Status:`,
+                    `  📋 TODO: ${analytics.tasksByStatus.TODO}`,
+                    `  🔄 IN_PROGRESS: ${analytics.tasksByStatus.IN_PROGRESS}`,
+                    `  👀 REVIEW: ${analytics.tasksByStatus.REVIEW}`,
+                    `  ✅ DONE: ${analytics.tasksByStatus.DONE}`,
+                ].join('\n');
+                return {
+                    content: [{ type: "text", text }],
+                };
+            }
+
+            case "get_recent_tasks": {
+                const { limit = 50 } = (args || {}) as Record<string, any>;
+                const tasks = await db.getRecentGlobalTasks(Number(limit));
+                if (tasks.length === 0) {
+                    return { content: [{ type: "text", text: "No recent tasks found." }] };
+                }
+                const text = tasks.map((t: any) =>
+                    `[${t.status}] ${t.title}${t.project_name ? ` (${t.project_name})` : ''} | Updated: ${t.updated_at}`
+                ).join('\n');
+                return {
+                    content: [{ type: "text", text: `Recent Tasks (${tasks.length}):\n${text}` }],
+                };
+            }
+
             default:
                 throw new McpError(ErrorCode.MethodNotFound, `Tool not found: ${name}`);
         }
@@ -470,6 +875,9 @@ async function run() {
         process.exit(1);
     }
 
+    // Initialize the database tables
+    await db.initDb();
+
     const isValid = await db.validateApiKey(apiKey);
     if (!isValid) {
         console.error("Invalid DP_API_KEY provided.");
@@ -481,5 +889,6 @@ async function run() {
 }
 
 run().catch((error) => {
+    console.error("Fatal error:", error);
     process.exit(1);
 });

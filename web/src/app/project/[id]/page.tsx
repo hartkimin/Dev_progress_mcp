@@ -2,10 +2,7 @@ import { getProjectById, getTasksByProject, Task } from '@/lib/db';
 import Link from 'next/link';
 import AutoRefresh from '../../components/AutoRefresh';
 
-import KanbanBoardClient from './KanbanBoardClient';
-import ProcessStepper from '@/components/ProcessStepper';
-import VibeGuidePanel from '@/components/VibeGuidePanel';
-import LiveSyncIndicator from '@/app/components/LiveSyncIndicator';
+import ProjectViewsContainer from './ProjectViewsContainer';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,7 +47,7 @@ export default async function ProjectBoard({ params }: { params: Promise<{ id: s
 
             <div className="w-full flex flex-col items-start gap-8">
                 {/* Header */}
-                <header className="w-full mb-2 pb-6 border-b border-slate-200 dark:border-slate-800/80 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <header className="relative z-50 w-full mb-2 pb-6 border-b border-slate-200 dark:border-slate-800/80 flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div className="flex-1">
                         <Link href="/" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors mb-4 group">
                             <svg className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -67,13 +64,10 @@ export default async function ProjectBoard({ params }: { params: Promise<{ id: s
                             </p>
                         )}
                     </div>
-                    <LiveSyncIndicator />
                 </header>
 
                 <div className="w-full">
-                    <ProcessStepper tasks={tasks} />
-                    <VibeGuidePanel tasks={tasks} />
-                    <KanbanBoardClient tasks={tasks} categoryStats={categoryStats} projectId={project.id} projectName={project.name} />
+                    <ProjectViewsContainer tasks={tasks} categoryStats={categoryStats} projectId={project.id} projectName={project.name} />
                 </div>
             </div>
         </main>

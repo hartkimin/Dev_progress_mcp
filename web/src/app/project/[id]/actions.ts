@@ -1,6 +1,6 @@
 'use server';
 
-import { updateTaskStatus, updateTaskDetails, getCommentsActionDb, addCommentActionDb, getTaskById, updateTaskPhaseAndStatusDb, createTaskDb, setTaskAiProcessing } from '@/lib/db';
+import { updateTaskStatus, updateTaskDetails, getCommentsActionDb, addCommentActionDb, getTaskById, updateTaskPhaseAndStatusDb, createTaskDb, setTaskAiProcessing, deleteTaskDb } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 export async function setTaskStatus(projectId: string, taskId: string, status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE') {
@@ -34,8 +34,14 @@ export async function syncTaskFromDb(taskId: string) {
     return await getTaskById(taskId);
 }
 
-export async function createTaskAction(projectId: string, title: string) {
-    const id = await createTaskDb(projectId, title, 'TODO', 'Web UI');
+export async function createTaskAction(projectId: string, title: string, taskType: string = '') {
+    const id = await createTaskDb(projectId, title, 'TODO', 'Web UI', taskType);
     revalidatePath(`/project/${projectId}`);
     return { success: true, id };
+}
+
+export async function deleteTaskAction(projectId: string, taskId: string) {
+    await deleteTaskDb(taskId);
+    revalidatePath(`/project/${projectId}`);
+    return { success: true };
 }
