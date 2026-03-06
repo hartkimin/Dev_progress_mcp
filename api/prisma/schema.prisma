@@ -1,0 +1,108 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  apiKeys   ApiKey[]
+
+  @@map("users")
+}
+
+model ApiKey {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  keyValue   String    @unique @map("key_value")
+  name       String
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastUsedAt DateTime? @map("last_used_at")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tasks                   Task[]
+  projectDocuments        ProjectDocument[]
+  projectDocumentVersions ProjectDocumentVersion[]
+
+  @@map("projects")
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  projectId   String    @map("project_id")
+  category    String?
+  phase       String?
+  taskType    String?   @map("task_type")
+  scale       String?
+  title       String
+  description String?
+  beforeWork  String?   @map("before_work")
+  afterWork   String?   @map("after_work")
+  status      String
+  startDate   DateTime? @map("start_date")
+  dueDate     DateTime? @map("due_date")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  updatedBy   String?   @map("updated_by")
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  comments Comment[]
+
+  @@map("tasks")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  taskId    String   @map("task_id")
+  author    String
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model ProjectDocument {
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  docType   String   @map("doc_type")
+  content   String?
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, docType])
+  @@map("project_documents")
+}
+
+model ProjectDocumentVersion {
+  id            String   @id @default(uuid())
+  projectId     String   @map("project_id")
+  docType       String   @map("doc_type")
+  content       String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  versionNumber Int      @map("version_number")
+  createdBy     String?  @default("System") @map("created_by")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_document_versions")
+}
