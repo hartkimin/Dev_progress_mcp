@@ -62,8 +62,62 @@ export default function DeploymentView({ projectId }: { projectId: string }) {
         );
     }
 
+    const handleCreateDeploy = async () => {
+        const version = prompt(ko ? '새로운 배포 버전을 입력하세요 (예: v1.0.3):' : 'Enter new deploy version (e.g., v1.0.3):');
+        if (!version) return;
+
+        try {
+            const { updateProjectDocumentAction } = await import('@/app/actions');
+            const newDoc = {
+                deployments: [{
+                    id: Math.random().toString(36).substr(2, 9),
+                    version: version,
+                    env: 'Production',
+                    status: 'running',
+                    branch: 'main',
+                    commitMsg: 'Manual deploy triggered via Dashboard',
+                    author: 'Frontend User',
+                    startedAt: new Date().toISOString(),
+                    duration: '0s'
+                }, ...MOCK],
+                checklist: CHECKLIST
+            };
+            await updateProjectDocumentAction(projectId, 'DEPLOY', JSON.stringify(newDoc));
+            // Reload
+            const doc = await fetchProjectDocument(projectId, 'DEPLOY');
+            if (doc && doc.content) {
+                const parsed = JSON.parse(doc.content);
+                setData({
+                    deployments: Array.isArray(parsed.deployments) ? parsed.deployments : [],
+                    checklist: Array.isArray(parsed.checklist) ? parsed.checklist : []
+                });
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Failed to trigger deploy');
+        }
+    };
+
     return (
         <div className="w-full flex flex-col gap-6">
+            {/* Header with Create Button */}
+            <div className="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
+                <div>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200">
+                        {ko ? '배포 현황 관리' : 'Deployment Management'}
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                        {ko ? '프로젝트의 배포 내역 및 진행 상태를 확인합니다.' : 'Track project deployments and statuses.'}
+                    </p>
+                </div>
+                <button
+                    onClick={handleCreateDeploy}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5"
+                >
+                    <Rocket className="w-4 h-4" /> {ko ? '새 배포 시작' : 'Trigger Deploy'}
+                </button>
+            </div>
+
             {/* Summary */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[

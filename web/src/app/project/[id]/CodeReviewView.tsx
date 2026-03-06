@@ -64,8 +64,62 @@ export default function CodeReviewView({ projectId }: { projectId: string }) {
         );
     }
 
+    const handleCreatePR = async () => {
+        const prLink = prompt(ko ? '새로운 PR 링크나 제목을 입력하세요:' : 'Enter new PR link or title:');
+        if (!prLink) return;
+
+        const newPR = {
+            id: Math.random().toString(36).substr(2, 9),
+            number: Math.floor(Math.random() * 1000) + 1,
+            title: prLink,
+            prLink: prLink, // Required by backend schema validation
+            author: 'Frontend User',
+            status: 'open',
+            reviewers: ['unassigned'],
+            updatedAt: new Date().toISOString(),
+            aiGenerated: false,
+            reviewRequired: true,
+            additions: 0,
+            deletions: 0,
+            comments: 0,
+            securityChecks: [],
+            depChanges: []
+        };
+
+        try {
+            const { appendProjectDocumentAction } = await import('@/app/actions');
+            await appendProjectDocumentAction(projectId, 'CODE_REVIEW', newPR);
+            // Reload
+            const doc = await fetchProjectDocument(projectId, 'CODE_REVIEW');
+            if (doc && doc.content) {
+                setPrs(JSON.parse(doc.content));
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Failed to register PR');
+        }
+    };
+
     return (
         <div className="w-full flex flex-col gap-6">
+            {/* Header with Create Button */}
+            <div className="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
+                <div>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200">
+                        {ko ? '코드 리뷰 현황' : 'Code Review Status'}
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                        {ko ? '진행 중인 Pull Request 및 리뷰 내역을 확인합니다.' : 'Track active pull requests and code reviews.'}
+                    </p>
+                </div>
+                <button
+                    onClick={handleCreatePR}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors"
+                >
+                    {ko ? '+ PR 등록' : '+ Add PR'}
+                </button>
+            </div>
+
             {/* Summary */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[

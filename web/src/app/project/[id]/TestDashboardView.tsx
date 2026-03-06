@@ -56,8 +56,62 @@ export default function TestDashboardView({ projectId }: { projectId: string }) 
         );
     }
 
+    const handleCreateFailedTest = async () => {
+        const testName = prompt(ko ? '실패한 테스트 이름을 입력하세요:' : 'Enter failed test name:');
+        if (!testName) return;
+
+        // Since the current mock data is an object { suites: [], failed: [] }
+        // The appendProjectDocumentAction by default will push to an array.
+        // We will just do a full document update here to prevent breaking the existing object structure,
+        // or we could append if it was an array. Since it is an object, we use full update.
+        try {
+            const { updateProjectDocumentAction } = await import('@/app/actions');
+            const newDoc = {
+                suites: SUITES,
+                failed: [...FAILED, {
+                    name: testName,
+                    suite: 'Frontend Manual Test',
+                    error: 'Assertion failed: expected true but got false',
+                    aiGenerated: false,
+                    reviewRequired: true
+                }]
+            };
+            await updateProjectDocumentAction(projectId, 'TEST', JSON.stringify(newDoc));
+            // Reload
+            const doc = await fetchProjectDocument(projectId, 'TEST');
+            if (doc && doc.content) {
+                const parsed = JSON.parse(doc.content);
+                setData({
+                    suites: Array.isArray(parsed.suites) ? parsed.suites : [],
+                    failed: Array.isArray(parsed.failed) ? parsed.failed : []
+                });
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Failed to log test');
+        }
+    };
+
     return (
         <div className="w-full flex flex-col gap-6">
+            {/* Header with Create Button */}
+            <div className="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
+                <div>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200">
+                        {ko ? '테스트 실행 결과' : 'Test Execution Results'}
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                        {ko ? '자동화된 테스트 케이스 현황 및 실패 원인을 분석합니다.' : 'Analyze automated test suites and failure reasons.'}
+                    </p>
+                </div>
+                <button
+                    onClick={handleCreateFailedTest}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors"
+                >
+                    {ko ? '+ 테스트 결과 로깅' : '+ Log Test'}
+                </button>
+            </div>
+
             {/* Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">

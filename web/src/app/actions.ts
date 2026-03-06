@@ -1,6 +1,6 @@
 'use server';
 
-import { getTasksByProject, getRecentGlobalTasks, createProject, getProjectDocumentDb, updateProjectDocumentDb } from '@/lib/db';
+import { getTasksByProject, getRecentGlobalTasks, createProject, getProjectDocumentDb, updateProjectDocumentDb, appendProjectDocumentItemDb } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 export async function getProjectTasks(projectId: string) {
@@ -24,6 +24,14 @@ export async function getProjectDocumentAction(projectId: string, docType: strin
 
 export async function updateProjectDocumentAction(projectId: string, docType: string, content: string) {
     const success = await updateProjectDocumentDb(projectId, docType, content);
+    if (success) {
+        revalidatePath(`/project/${projectId}`);
+    }
+    return success;
+}
+
+export async function appendProjectDocumentAction(projectId: string, docType: string, itemData: any) {
+    const success = await appendProjectDocumentItemDb(projectId, docType, itemData);
     if (success) {
         revalidatePath(`/project/${projectId}`);
     }

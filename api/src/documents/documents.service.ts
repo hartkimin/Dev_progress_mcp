@@ -58,8 +58,8 @@ export class DocumentsService {
             where: {
                 projectId_docType: { projectId, docType }
             },
-            update: { content, status },
-            create: { projectId, docType, content, status }
+            update: { content },
+            create: { projectId, docType, content }
         });
 
         // 버전 이력 남기기

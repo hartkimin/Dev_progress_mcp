@@ -282,6 +282,14 @@ export async function updateProjectDocumentDb(projectId: string, docType: string
     return true;
 }
 
+export async function appendProjectDocumentItemDb(projectId: string, docType: string, itemData: any): Promise<boolean> {
+    await fetchApi(`/projects/${projectId}/documents/${docType}/append`, {
+        method: 'POST',
+        body: JSON.stringify(itemData)
+    });
+    return true;
+}
+
 export async function getProjectDocumentVersionsDb(projectId: string, docType: string): Promise<ProjectDocumentVersion[]> {
     return await fetchApi(`/projects/${projectId}/documents/${docType}/versions`);
 }

@@ -95,8 +95,58 @@ export default function IssueTrackerView({ projectId }: { projectId: string }) {
         );
     }
 
+    const handleCreateIssue = async () => {
+        const title = prompt(language === 'ko' ? '새로운 이슈 제목을 입력하세요:' : 'Enter new issue title:');
+        if (!title) return;
+
+        const newIssue = {
+            title,
+            type: 'bug',
+            severity: 'P2',
+            status: 'reported',
+            assignee: '',
+            reporter: 'Frontend User',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            aiGenerated: false,
+            reviewRequired: false,
+            description: 'Manually created via Dashboard'
+        };
+
+        try {
+            const { appendProjectDocumentAction } = await import('@/app/actions');
+            await appendProjectDocumentAction(projectId, 'ISSUE_TRACKER', newIssue);
+            // Reload
+            const doc = await fetchProjectDocument(projectId, 'ISSUE_TRACKER');
+            if (doc && doc.content) {
+                setIssues(JSON.parse(doc.content));
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Failed to create issue');
+        }
+    };
+
     return (
         <div className="w-full flex flex-col gap-6">
+            {/* Header with Create Button */}
+            <div className="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
+                <div>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200">
+                        {language === 'ko' ? '이슈 트래커 현황' : 'Issue Tracker Status'}
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                        {language === 'ko' ? '프로젝트에서 발생한 이슈 및 버그 리포트를 추적합니다.' : 'Track issues and bug reports for this project.'}
+                    </p>
+                </div>
+                <button
+                    onClick={handleCreateIssue}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors"
+                >
+                    {language === 'ko' ? '+ 새로운 이슈' : '+ New Issue'}
+                </button>
+            </div>
+
             {/* Lifecycle Pipeline */}
             <div className="flex items-center justify-between gap-2 overflow-x-auto pb-2">
                 {(Object.entries(STATUS_CONFIG) as [IssueStatus, typeof STATUS_CONFIG[IssueStatus]][]).map(([key, cfg], idx, arr) => (
