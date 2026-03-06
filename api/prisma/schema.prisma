@@ -80,12 +80,18 @@ model Comment {
   @@map("comments")
 }
 
+enum DocumentStatus {
+  DRAFT
+  APPROVED
+}
+
 model ProjectDocument {
-  id        String   @id @default(uuid())
-  projectId String   @map("project_id")
-  docType   String   @map("doc_type")
+  id        String         @id @default(uuid())
+  projectId String         @map("project_id")
+  docType   String         @map("doc_type")
   content   String?
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  status    DocumentStatus @default(APPROVED)
+  updatedAt DateTime       @default(now()) @updatedAt @map("updated_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 

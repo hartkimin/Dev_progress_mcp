@@ -41,7 +41,11 @@ export class DocumentsService {
             }
         }
 
-        // === 2. Update and Versioning ===
+        // === 2. Update and Versioning (Draft System) ===
+        // 기본적으로 모든 업로드는 일단 DRAFT 처리로 간주하는 로직 (상용화 시)
+        // (현재는 호환성을 위해 DRAFT 여부를 dto나 플래그로 받을 수 있도록 확장할 수 있으나, 우선 DRAFT 로직을 태웁니다)
+        const status = 'DRAFT'; // 향후 dto.isDraft 형식으로 분기처리
+
         // 현재 버전 번호 찾기
         const lastVersion = await this.prisma.projectDocumentVersion.findFirst({
             where: { projectId, docType },
@@ -54,8 +58,8 @@ export class DocumentsService {
             where: {
                 projectId_docType: { projectId, docType }
             },
-            update: { content },
-            create: { projectId, docType, content }
+            update: { content, status },
+            create: { projectId, docType, content, status }
         });
 
         // 버전 이력 남기기
