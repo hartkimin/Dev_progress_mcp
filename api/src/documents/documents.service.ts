@@ -91,4 +91,56 @@ export class DocumentsService {
         // 복원도 일종의 'Update'이므로 버전을 추가로 생성하며 업데이트 진행
         return this.update(projectId, docType, { content: version.content || '' });
     }
+
+    async appendItem(projectId: string, docType: string, itemData: any) {
+        // 단일 아이템 스키마 검증
+        this.validateItemSchema(docType, itemData);
+
+        // 기존 배열 파싱
+        const doc = await this.prisma.projectDocument.findUnique({
+            where: { projectId_docType: { projectId, docType } }
+        });
+
+        let arr: any[] = [];
+        if (doc && doc.content) {
+            try {
+                arr = JSON.parse(doc.content);
+                if (!Array.isArray(arr)) arr = [];
+            } catch (e) {
+                arr = []; // 파싱 에러나면 빈 배열로 초기화
+            }
+        }
+
+        // 아이디가 없으면 임의 생성 (이슈 트래커 등)
+        if (!itemData.id) {
+            itemData.id = Math.random().toString(36).substr(2, 9);
+        }
+
+        arr.push(itemData);
+        const content = JSON.stringify(arr, null, 2);
+
+        // 업데이트 수행 (내부적으로 버전 생성도 함)
+        return this.update(projectId, docType, { content });
+    }
+
+    private validateItemSchema(docType: string, item: any) {
+        const jsonTypes = ['ISSUE_TRACKER', 'CODE_REVIEW', 'TEST', 'DEPLOY', 'AI_CONTEXT'];
+        if (!jsonTypes.includes(docType)) {
+            throw new BadRequestException('이 문서 타입은 배열 기반 Append 동작을 지원하지 않습니다.');
+        }
+
+        if (typeof item !== 'object' || Array.isArray(item)) {
+            throw new BadRequestException('아이템은 단일 구조 형태여야 합니다.');
+        }
+
+        if (docType === 'ISSUE_TRACKER') {
+            if (!item.title || !item.status) throw new BadRequestException('ISSUE_TRACKER 아이템은 title과 status가 필수입니다.');
+        } else if (docType === 'CODE_REVIEW') {
+            if (!item.prLink || !item.status) throw new BadRequestException('CODE_REVIEW 아이템은 prLink와 status가 필수입니다.');
+        } else if (docType === 'TEST') {
+            if (!item.testName || !item.status) throw new BadRequestException('TEST 아이템은 testName과 status가 필수입니다.');
+        } else if (docType === 'DEPLOY') {
+            if (!item.version || !item.env || !item.status) throw new BadRequestException('DEPLOY 아이템은 version, env, status가 필수입니다.');
+        }
+    }
 }

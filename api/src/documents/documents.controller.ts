@@ -45,4 +45,14 @@ export class DocumentsController {
     ) {
         return this.documentsService.restoreVersion(projectId, docType, versionId);
     }
+
+    @Post(':docType/append')
+    @ApiOperation({ summary: 'JSON 문서 배열에 단일 아이템 원자적 추가' })
+    appendItem(
+        @Param('projectId') projectId: string,
+        @Param('docType') docType: string,
+        @Body() itemData: any
+    ) {
+        return this.documentsService.appendItem(projectId, docType, itemData);
+    }
 }
