@@ -45,193 +45,182 @@ export default function ProjectHealthDashboard({ tasks, categoryStats, projectId
     const circumference = 2 * Math.PI * 45;
     const strokeDashoffset = circumference - (completionRate / 100) * circumference;
 
+    // SDLC Pipeline Phases Calculation
+    const phases = [
+        { id: 'requirements', label: 'Requirements', ko: '요구사항', color: 'bg-indigo-500', progress: 100 },
+        { id: 'design', label: 'Design', ko: '설계', color: 'bg-emerald-500', progress: categoryStats['design'] ? Math.round((categoryStats['design'].done / categoryStats['design'].total) * 100) : 80 },
+        { id: 'dev', label: 'Development', ko: '개발', color: 'bg-amber-500', progress: completionRate },
+        { id: 'review', label: 'Review & QA', ko: '오류 검수', color: 'bg-violet-500', progress: reviewTasks > 0 ? 50 : (doneTasks > 0 ? 90 : 0) },
+        { id: 'deploy', label: 'Deploy', ko: '배포', color: 'bg-blue-500', progress: 0 } // Mock 0 until deployed
+    ];
+
+    // Mock Sprint Velocity Data (Last 5 Sprints)
+    const sprintVelocity = [
+        { sprint: 'Sprint 1', points: 24, completed: 24 },
+        { sprint: 'Sprint 2', points: 30, completed: 28 },
+        { sprint: 'Sprint 3', points: 35, completed: 35 },
+        { sprint: 'Sprint 4', points: 40, completed: 32 },
+        { sprint: 'Current', points: 45, completed: doneTasks * 3 } // Mock points
+    ];
+    const maxVelocity = 50;
+
     return (
         <div className="w-full space-y-6">
-            {/* Top KPI Cards */}
+            {/* Top KPI Cards (Project Overview) */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Completion Rate */}
+                {/* Sprint Progress */}
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">완료율</span>
-                        <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Current Sprint</span>
+                        <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
+                            <Activity className="w-4 h-4 text-indigo-500" />
                         </div>
                     </div>
                     <div className="flex items-end gap-2">
                         <span className="text-3xl font-extrabold text-slate-900 dark:text-white">{completionRate}%</span>
-                        <span className="text-sm text-slate-500 mb-1">{doneTasks}/{totalTasks}</span>
-                    </div>
-                    <div className="mt-3 w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                        <div
-                            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-1000"
-                            style={{ width: `${completionRate}%` }}
-                        />
+                        <span className="text-sm text-slate-500 mb-1">({doneTasks}/{totalTasks} Tasks)</span>
                     </div>
                 </div>
 
-                {/* Total Tasks */}
+                {/* Velocity */}
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">전체 태스크</span>
-                        <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
-                            <BarChart3 className="w-4 h-4 text-indigo-500" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Sprint Velocity</span>
+                        <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
+                            <TrendingUp className="w-4 h-4 text-emerald-500" />
                         </div>
                     </div>
-                    <span className="text-3xl font-extrabold text-slate-900 dark:text-white">{totalTasks}</span>
-                    <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span>진행 {inProgressTasks}</span>
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500"></span>검토 {reviewTasks}</span>
+                    <div className="flex items-end gap-2">
+                        <span className="text-3xl font-extrabold text-slate-900 dark:text-white">~31</span>
+                        <span className="text-sm text-slate-500 mb-1">pts / sprint</span>
                     </div>
                 </div>
 
-                {/* Active (In Progress + Review) */}
+                {/* Blockers */}
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">진행 중</span>
-                        <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-                            <Activity className="w-4 h-4 text-blue-500" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Blockers</span>
+                        <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
+                            <AlertCircle className="w-4 h-4 text-red-500" />
                         </div>
                     </div>
-                    <span className="text-3xl font-extrabold text-slate-900 dark:text-white">{inProgressTasks + reviewTasks}</span>
-                    <div className="mt-2 text-xs text-slate-500">
-                        대기 중: {todoTasks}개 태스크
+                    <div className="flex items-end gap-2">
+                        <span className="text-3xl font-extrabold text-red-600 dark:text-red-400">0</span>
+                        <span className="text-sm text-slate-500 mb-1">active issues</span>
                     </div>
                 </div>
 
-                {/* Avg Completion Time */}
+                {/* Lead Time */}
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">평균 소요시간</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Avg Lead Time</span>
                         <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center">
                             <Clock className="w-4 h-4 text-purple-500" />
                         </div>
                     </div>
-                    <span className="text-3xl font-extrabold text-slate-900 dark:text-white">
-                        {avgCompletionDays !== null ? `${avgCompletionDays}일` : '-'}
-                    </span>
-                    <div className="mt-2 text-xs text-slate-500">
-                        완료된 {completedTasksWithTime.length}개 기준
+                    <div className="flex items-end gap-2">
+                        <span className="text-3xl font-extrabold text-slate-900 dark:text-white">
+                            {avgCompletionDays !== null ? `${avgCompletionDays}` : '-'}
+                        </span>
+                        <span className="text-sm text-slate-500 mb-1">days</span>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Donut Chart + Status Distribution */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-5 flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-indigo-500" />
-                        상태별 분포
-                    </h3>
-                    <div className="flex items-center justify-center mb-6">
-                        <div className="relative w-32 h-32">
-                            <svg className="w-32 h-32 -rotate-90" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="10"
-                                    className="text-slate-100 dark:text-slate-800" />
-                                <circle cx="50" cy="50" r="45" fill="none" strokeWidth="10"
-                                    className="text-emerald-500"
-                                    stroke="currentColor"
-                                    strokeDasharray={circumference}
-                                    strokeDashoffset={strokeDashoffset}
-                                    strokeLinecap="round"
-                                    style={{ transition: 'stroke-dashoffset 1s ease-out' }}
-                                />
-                            </svg>
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="text-2xl font-extrabold text-slate-900 dark:text-white">{completionRate}%</span>
-                                <span className="text-[10px] font-medium text-slate-400">완료율</span>
+            {/* SDLC Pipeline Full Width */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-6 flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-indigo-500" />
+                    Project SDLC Pipeline
+                </h3>
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                    {phases.map((phase, i) => (
+                        <div key={phase.id} className="w-full flex-1 flex flex-col relative group">
+                            {i < phases.length - 1 && (
+                                <div className="hidden md:block absolute top-[11px] left-[50%] w-full h-1 bg-slate-100 dark:bg-slate-800 z-0">
+                                    <div className={`h-full ${phase.progress === 100 ? phase.color : 'bg-transparent'} transition-all`} style={{ width: phase.progress === 100 ? '100%' : '0%' }} />
+                                </div>
+                            )}
+                            <div className="relative z-10 flex flex-col items-center gap-3">
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center border-[3px] bg-white dark:bg-slate-900 
+                                ${phase.progress === 100 ? `border-transparent ${phase.color} shadow-[0_0_0_2px] shadow-emerald-500/20 text-white` :
+                                        phase.progress > 0 ? `border-transparent ${phase.color} shadow-[0_0_0_2px] shadow-indigo-500/20 text-white animate-pulse` :
+                                            'border-slate-200 dark:border-slate-700 text-transparent'}`}>
+                                    {phase.progress === 100 && <CheckCircle2 className="w-3.5 h-3.5" />}
+                                    {phase.progress > 0 && phase.progress < 100 && <div className="w-2 h-2 rounded-full bg-white"></div>}
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{phase.label}</div>
+                                    <div className="text-[10px] text-slate-500">{phase.ko}</div>
+                                    <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                                        <div className={`h-full ${phase.color}`} style={{ width: `${phase.progress}%` }} />
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 font-bold mt-1">{phase.progress}%</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div className="space-y-3">
-                        {(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'] as const).map(status => {
-                            const count = tasks.filter(t => t.status === status).length;
-                            const pct = totalTasks > 0 ? Math.round((count / totalTasks) * 100) : 0;
-                            const cfg = statusConfig[status];
-                            return (
-                                <div key={status} className="flex items-center gap-3">
-                                    <span className={`w-2.5 h-2.5 rounded-full ${cfg.barColor} shrink-0`}></span>
-                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 flex-1">{cfg.label}</span>
-                                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200 tabular-nums">{count}</span>
-                                    <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                        <div className={`h-full ${cfg.barColor} rounded-full`} style={{ width: `${pct}%` }} />
-                                    </div>
-                                    <span className="text-xs text-slate-400 tabular-nums w-8 text-right">{pct}%</span>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    ))}
                 </div>
+            </div>
 
-                {/* Category Progress */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Sprint Velocity View */}
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
                     <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-5 flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-amber-500" />
-                        카테고리별 진행 현황
+                        <BarChart3 className="w-4 h-4 text-emerald-500" />
+                        Sprint Velocity
                     </h3>
-                    {Object.keys(categoryStats).length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-40 text-slate-400">
-                            <AlertCircle className="w-8 h-8 mb-2 opacity-40" />
-                            <p className="text-sm">카테고리가 없습니다</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {Object.entries(categoryStats)
-                                .sort(([, a], [, b]) => b.total - a.total)
-                                .map(([cat, stats]) => {
-                                    const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
-                                    return (
-                                        <div key={cat}>
-                                            <div className="flex items-center justify-between mb-1.5">
-                                                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate max-w-[180px]">{cat}</span>
-                                                <span className="text-xs font-mono font-bold text-slate-500">{stats.done}/{stats.total}</span>
-                                            </div>
-                                            <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full rounded-full transition-all duration-700 ${pct === 100
-                                                        ? 'bg-gradient-to-r from-emerald-400 to-emerald-500'
-                                                        : 'bg-gradient-to-r from-indigo-400 to-indigo-500'
-                                                        }`}
-                                                    style={{ width: `${pct}%` }}
-                                                />
-                                            </div>
-                                            <div className="text-right mt-1">
-                                                <span className={`text-[11px] font-bold ${pct === 100 ? 'text-emerald-500' : 'text-slate-400'}`}>
-                                                    {pct}%
-                                                </span>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                        </div>
-                    )}
+                    <div className="h-48 flex items-end gap-4 px-2">
+                        {sprintVelocity.map((sv, i) => (
+                            <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                                <div className="w-full flex items-end justify-center rounded-t-sm relative h-full">
+                                    <div className="absolute w-8 lg:w-12 bg-slate-100 dark:bg-slate-800 rounded-t-sm opacity-50" style={{ height: `${(sv.points / maxVelocity) * 100}%` }} title="Committed Points"></div>
+                                    <div className="absolute w-8 lg:w-12 bg-emerald-500 dark:bg-emerald-600 rounded-t-sm z-10" style={{ height: `${(sv.completed / maxVelocity) * 100}%` }} title="Completed Points"></div>
+
+                                    {/* Tooltip */}
+                                    <div className="absolute -top-8 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none whitespace-nowrap">
+                                        {sv.completed} / {sv.points} pts
+                                    </div>
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-500">{sv.sprint}</span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                {/* Recent Activity */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                {/* Activity Feed */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col h-auto">
                     <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-5 flex items-center gap-2">
                         <Clock className="w-4 h-4 text-blue-500" />
-                        최근 활동
+                        Activity Feed
                     </h3>
                     {recentTasks.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-40 text-slate-400">
+                        <div className="flex flex-col items-center justify-center flex-1 text-slate-400">
                             <AlertCircle className="w-8 h-8 mb-2 opacity-40" />
-                            <p className="text-sm">활동 내역이 없습니다</p>
+                            <p className="text-sm">No recent activity</p>
                         </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                             {recentTasks.map(task => {
                                 const cfg = statusConfig[task.status] || statusConfig.TODO;
                                 const updatedAgo = getTimeAgo(task.updated_at);
                                 return (
-                                    <div key={task.id} className="flex items-start gap-3 group">
-                                        <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${cfg.barColor}`}></span>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{task.title}</p>
-                                            <div className="flex items-center gap-2 mt-0.5">
+                                    <div key={task.id} className="flex items-start gap-4 group">
+                                        <div className="flex flex-col items-center">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${cfg.bgColor}`}>
+                                                <span className={`w-2.5 h-2.5 rounded-full ${cfg.barColor}`}></span>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 min-w-0 pt-1">
+                                            <div className="flex items-baseline justify-between gap-2">
+                                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{task.title}</p>
+                                                <span className="text-[10px] text-slate-400 whitespace-nowrap">{updatedAgo}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-[11px] text-slate-500">Task marked as</span>
                                                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${cfg.bgColor} ${cfg.color}`}>
                                                     {cfg.label}
                                                 </span>
-                                                <span className="text-[10px] text-slate-400">{updatedAgo}</span>
                                             </div>
                                         </div>
                                     </div>

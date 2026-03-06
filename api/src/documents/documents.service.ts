@@ -100,18 +100,18 @@ export class DocumentsService {
         // 단일 아이템 스키마 검증
         this.validateItemSchema(docType, itemData);
 
-        // 기존 배열 파싱
+        // 기존 배열/객체 파싱
         const doc = await this.prisma.projectDocument.findUnique({
             where: { projectId_docType: { projectId, docType } }
         });
 
-        let arr: any[] = [];
+        let parsedData: any;
+
         if (doc && doc.content) {
             try {
-                arr = JSON.parse(doc.content);
-                if (!Array.isArray(arr)) arr = [];
+                parsedData = JSON.parse(doc.content);
             } catch (e) {
-                arr = []; // 파싱 에러나면 빈 배열로 초기화
+                parsedData = null;
             }
         }
 
@@ -120,11 +120,36 @@ export class DocumentsService {
             itemData.id = Math.random().toString(36).substr(2, 9);
         }
 
-        arr.push(itemData);
-        const content = JSON.stringify(arr, null, 2);
+        let finalContent = '';
+
+        if (docType === 'TEST') {
+            if (!parsedData || typeof parsedData !== 'object' || Array.isArray(parsedData)) {
+                parsedData = { suites: [], failed: [] };
+            }
+            if (!Array.isArray(parsedData.failed)) parsedData.failed = [];
+            parsedData.failed.push(itemData);
+            finalContent = JSON.stringify(parsedData, null, 2);
+        }
+        else if (docType === 'DEPLOY') {
+            if (!parsedData || typeof parsedData !== 'object' || Array.isArray(parsedData)) {
+                parsedData = { deployments: [], checklist: [] };
+            }
+            if (!Array.isArray(parsedData.deployments)) parsedData.deployments = [];
+            // 최신 배포가 위로 오도록 unshift 또는 push (프론트엔드 정렬에 따름, 여기선 배열의 앞단에 추가)
+            parsedData.deployments.unshift(itemData);
+            finalContent = JSON.stringify(parsedData, null, 2);
+        }
+        else {
+            // ISSUE_TRACKER, CODE_REVIEW 등은 최상위가 배열임
+            if (!Array.isArray(parsedData)) {
+                parsedData = [];
+            }
+            parsedData.push(itemData);
+            finalContent = JSON.stringify(parsedData, null, 2);
+        }
 
         // 업데이트 수행 (내부적으로 버전 생성도 함)
-        return this.update(projectId, docType, { content });
+        return this.update(projectId, docType, { content: finalContent });
     }
 
     private validateItemSchema(docType: string, item: any) {
@@ -140,9 +165,10 @@ export class DocumentsService {
         if (docType === 'ISSUE_TRACKER') {
             if (!item.title || !item.status) throw new BadRequestException('ISSUE_TRACKER 아이템은 title과 status가 필수입니다.');
         } else if (docType === 'CODE_REVIEW') {
-            if (!item.prLink || !item.status) throw new BadRequestException('CODE_REVIEW 아이템은 prLink와 status가 필수입니다.');
+            // PR 추가 시 prLink는 필수
+            if (!item.prLink) throw new BadRequestException('CODE_REVIEW 아이템은 prLink 필수입니다.');
         } else if (docType === 'TEST') {
-            if (!item.testName || !item.status) throw new BadRequestException('TEST 아이템은 testName과 status가 필수입니다.');
+            if (!item.name || !item.error) throw new BadRequestException('TEST 실패 아이템은 name과 error 필드가 필수입니다.');
         } else if (docType === 'DEPLOY') {
             if (!item.version || !item.env || !item.status) throw new BadRequestException('DEPLOY 아이템은 version, env, status가 필수입니다.');
         }

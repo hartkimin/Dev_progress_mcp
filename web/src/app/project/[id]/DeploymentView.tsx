@@ -67,22 +67,18 @@ export default function DeploymentView({ projectId }: { projectId: string }) {
         if (!version) return;
 
         try {
-            const { updateProjectDocumentAction } = await import('@/app/actions');
-            const newDoc = {
-                deployments: [{
-                    id: Math.random().toString(36).substr(2, 9),
-                    version: version,
-                    env: 'Production',
-                    status: 'running',
-                    branch: 'main',
-                    commitMsg: 'Manual deploy triggered via Dashboard',
-                    author: 'Frontend User',
-                    startedAt: new Date().toISOString(),
-                    duration: '0s'
-                }, ...MOCK],
-                checklist: CHECKLIST
-            };
-            await updateProjectDocumentAction(projectId, 'DEPLOY', JSON.stringify(newDoc));
+            const { appendProjectDocumentAction } = await import('@/app/actions');
+            await appendProjectDocumentAction(projectId, 'DEPLOY', {
+                version: version,
+                env: 'Production',
+                status: 'running',
+                branch: 'main',
+                commitMsg: 'Manual deploy triggered via Dashboard',
+                author: 'Frontend User',
+                startedAt: new Date().toISOString(),
+                duration: '0s'
+            });
+
             // Reload
             const doc = await fetchProjectDocument(projectId, 'DEPLOY');
             if (doc && doc.content) {

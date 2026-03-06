@@ -60,23 +60,16 @@ export default function TestDashboardView({ projectId }: { projectId: string }) 
         const testName = prompt(ko ? '실패한 테스트 이름을 입력하세요:' : 'Enter failed test name:');
         if (!testName) return;
 
-        // Since the current mock data is an object { suites: [], failed: [] }
-        // The appendProjectDocumentAction by default will push to an array.
-        // We will just do a full document update here to prevent breaking the existing object structure,
-        // or we could append if it was an array. Since it is an object, we use full update.
         try {
-            const { updateProjectDocumentAction } = await import('@/app/actions');
-            const newDoc = {
-                suites: SUITES,
-                failed: [...FAILED, {
-                    name: testName,
-                    suite: 'Frontend Manual Test',
-                    error: 'Assertion failed: expected true but got false',
-                    aiGenerated: false,
-                    reviewRequired: true
-                }]
-            };
-            await updateProjectDocumentAction(projectId, 'TEST', JSON.stringify(newDoc));
+            const { appendProjectDocumentAction } = await import('@/app/actions');
+            await appendProjectDocumentAction(projectId, 'TEST', {
+                name: testName,
+                suite: 'Frontend Manual Test',
+                error: 'Assertion failed: expected true but got false',
+                duration: '0.0s',
+                aiGenerated: false,
+                reviewRequired: true
+            });
             // Reload
             const doc = await fetchProjectDocument(projectId, 'TEST');
             if (doc && doc.content) {
