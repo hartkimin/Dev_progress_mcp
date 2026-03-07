@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { fetchProjectDocument } from '@/app/actions/documentActions';
 import { useTranslation } from '@/lib/i18n';
 import { CheckCircle2, XCircle, AlertTriangle, Bot, BarChart3, Layers, Zap, TestTube2 } from 'lucide-react';
+import EmptyStatePrompt from '@/components/EmptyStatePrompt';
 
 interface TestSuite { name: string; total: number; passed: number; failed: number; skipped: number; type: 'unit' | 'integration' | 'e2e'; }
 interface FailedTest { name: string; suite: string; error: string; aiGenerated: boolean; reviewRequired: boolean; }
@@ -105,78 +106,91 @@ export default function TestDashboardView({ projectId }: { projectId: string }) 
                 </button>
             </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div className="flex items-center justify-between mb-2"><BarChart3 className="w-5 h-5 text-indigo-500" /></div>
-                    <div className="text-3xl font-bold text-slate-800 dark:text-white">{coverage}%</div>
-                    <div className="text-sm text-slate-500 mt-1">{ko ? '전체 통과율' : 'Overall Pass Rate'}</div>
-                    <div className="mt-3 w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all" style={{ width: `${coverage}%` }} />
-                    </div>
+            {/* Content or Empty State */}
+            {SUITES.length === 0 ? (
+                <div className="mt-2">
+                    <EmptyStatePrompt
+                        title={ko ? "등록된 테스트 결과가 없습니다" : "No Test Results Found"}
+                        description={ko ? "현재 프로젝트에 수행된 자동화 테스트 결과가 없습니다. AI에게 초기 테스트 스위트 데이터를 생성해 달라고 요청해보세요." : "There are no automated test results for this project. Ask AI to generate initial test suite data."}
+                        suggestedPrompt={ko ? "현재 프로젝트의 주요 모듈에 대한 가상의 단위 테스트 및 통합 테스트 결과 데이터(성공/실패 엣지 케이스 포함)를 테스트 탭에 추가해줘." : "Create virtual unit and integration test result data (including successes/failures) for the main modules of this project and add them to the Test tab."}
+                    />
                 </div>
-                {([['unit', ko ? '단위 테스트' : 'Unit', 'text-blue-600 dark:text-blue-400', Layers], ['integration', ko ? '통합 테스트' : 'Integration', 'text-amber-600 dark:text-amber-400', Zap], ['e2e', ko ? 'E2E 테스트' : 'E2E', 'text-violet-600 dark:text-violet-400', TestTube2]] as const).map(([type, label, color, Icon]) => (
-                    <div key={type} className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-                        <div className="flex items-center justify-between mb-2"><Icon className={`w-5 h-5 ${color}`} /></div>
-                        <div className={`text-3xl font-bold ${color}`}>{typeRate(byType[type])}%</div>
-                        <div className="text-sm text-slate-500 mt-1">{label}</div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Test Suites */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-                    <h3 className="font-semibold text-slate-800 dark:text-slate-200">{ko ? '테스트 스위트' : 'Test Suites'}</h3>
-                </div>
-                <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {SUITES.map((s, i) => {
-                        const rate = s.total ? Math.round((s.passed / s.total) * 100) : 100;
-                        return (
-                            <div key={i} className="p-4 flex items-center gap-4">
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-medium text-slate-800 dark:text-slate-200">{s.name}</span>
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${s.type === 'unit' ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600' : s.type === 'integration' ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-600' : 'bg-violet-100 dark:bg-violet-500/20 text-violet-600'}`}>{s.type.toUpperCase()}</span>
-                                    </div>
-                                    <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                        <div className={`h-full rounded-full transition-all ${rate === 100 ? 'bg-emerald-500' : rate >= 80 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${rate}%` }} />
-                                    </div>
-                                </div>
-                                <div className="text-right shrink-0 text-sm">
-                                    <span className="text-emerald-600">{s.passed}</span>
-                                    {s.failed > 0 && <span className="text-red-500 ml-2">{s.failed} ✗</span>}
-                                    {s.skipped > 0 && <span className="text-slate-400 ml-2">{s.skipped} ⊘</span>}
-                                    <span className="text-slate-400 ml-2">/ {s.total}</span>
-                                </div>
+            ) : (
+                <>
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                            <div className="flex items-center justify-between mb-2"><BarChart3 className="w-5 h-5 text-indigo-500" /></div>
+                            <div className="text-3xl font-bold text-slate-800 dark:text-white">{coverage}%</div>
+                            <div className="text-sm text-slate-500 mt-1">{ko ? '전체 통과율' : 'Overall Pass Rate'}</div>
+                            <div className="mt-3 w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all" style={{ width: `${coverage}%` }} />
                             </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Failed Tests */}
-            {FAILED.length > 0 && (
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-red-200 dark:border-red-900/50 shadow-sm overflow-hidden">
-                    <div className="p-4 border-b border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-950/20">
-                        <h3 className="font-semibold text-red-700 dark:text-red-400 flex items-center gap-2">
-                            <XCircle className="w-5 h-5" /> {ko ? '실패한 테스트' : 'Failed Tests'} ({FAILED.length})
-                        </h3>
-                    </div>
-                    <div className="divide-y divide-red-100 dark:divide-red-900/20">
-                        {FAILED.map((f, i) => (
-                            <div key={i} className="p-4">
-                                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                    <span className="font-medium text-slate-800 dark:text-slate-200 text-sm">{f.name}</span>
-                                    <span className="text-xs text-slate-400">{f.suite}</span>
-                                    {f.aiGenerated && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400"><Bot className="w-3 h-3" /> AI</span>}
-                                    {f.reviewRequired && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">⚠️ {ko ? '검토 필요' : 'Review'}</span>}
-                                </div>
-                                <code className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 px-2 py-1 rounded">{f.error}</code>
+                        </div>
+                        {([['unit', ko ? '단위 테스트' : 'Unit', 'text-blue-600 dark:text-blue-400', Layers], ['integration', ko ? '통합 테스트' : 'Integration', 'text-amber-600 dark:text-amber-400', Zap], ['e2e', ko ? 'E2E 테스트' : 'E2E', 'text-violet-600 dark:text-violet-400', TestTube2]] as const).map(([type, label, color, Icon]) => (
+                            <div key={type} className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                                <div className="flex items-center justify-between mb-2"><Icon className={`w-5 h-5 ${color}`} /></div>
+                                <div className={`text-3xl font-bold ${color}`}>{typeRate(byType[type])}%</div>
+                                <div className="text-sm text-slate-500 mt-1">{label}</div>
                             </div>
                         ))}
                     </div>
-                </div>
+
+                    {/* Test Suites */}
+                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                            <h3 className="font-semibold text-slate-800 dark:text-slate-200">{ko ? '테스트 스위트' : 'Test Suites'}</h3>
+                        </div>
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {SUITES.map((s, i) => {
+                                const rate = s.total ? Math.round((s.passed / s.total) * 100) : 100;
+                                return (
+                                    <div key={i} className="p-4 flex items-center gap-4">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-medium text-slate-800 dark:text-slate-200">{s.name}</span>
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${s.type === 'unit' ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600' : s.type === 'integration' ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-600' : 'bg-violet-100 dark:bg-violet-500/20 text-violet-600'}`}>{s.type.toUpperCase()}</span>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                <div className={`h-full rounded-full transition-all ${rate === 100 ? 'bg-emerald-500' : rate >= 80 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${rate}%` }} />
+                                            </div>
+                                        </div>
+                                        <div className="text-right shrink-0 text-sm">
+                                            <span className="text-emerald-600">{s.passed}</span>
+                                            {s.failed > 0 && <span className="text-red-500 ml-2">{s.failed} ✗</span>}
+                                            {s.skipped > 0 && <span className="text-slate-400 ml-2">{s.skipped} ⊘</span>}
+                                            <span className="text-slate-400 ml-2">/ {s.total}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Failed Tests */}
+                    {FAILED.length > 0 && (
+                        <div className="bg-white dark:bg-slate-900 rounded-xl border border-red-200 dark:border-red-900/50 shadow-sm overflow-hidden">
+                            <div className="p-4 border-b border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-950/20">
+                                <h3 className="font-semibold text-red-700 dark:text-red-400 flex items-center gap-2">
+                                    <XCircle className="w-5 h-5" /> {ko ? '실패한 테스트' : 'Failed Tests'} ({FAILED.length})
+                                </h3>
+                            </div>
+                            <div className="divide-y divide-red-100 dark:divide-red-900/20">
+                                {FAILED.map((f, i) => (
+                                    <div key={i} className="p-4">
+                                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                            <span className="font-medium text-slate-800 dark:text-slate-200 text-sm">{f.name}</span>
+                                            <span className="text-xs text-slate-400">{f.suite}</span>
+                                            {f.aiGenerated && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400"><Bot className="w-3 h-3" /> AI</span>}
+                                            {f.reviewRequired && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">⚠️ {ko ? '검토 필요' : 'Review'}</span>}
+                                        </div>
+                                        <code className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 px-2 py-1 rounded">{f.error}</code>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
 
             <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 text-xs text-slate-500">

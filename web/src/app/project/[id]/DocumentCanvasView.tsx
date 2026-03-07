@@ -7,6 +7,7 @@ import MermaidCanvas from '@/components/MermaidCanvas';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { History, Upload, Clock, X, FileText } from 'lucide-react';
+import EmptyStatePrompt from '@/components/EmptyStatePrompt';
 
 interface DocumentCanvasViewProps {
     projectId: string;
@@ -20,16 +21,19 @@ export default function DocumentCanvasView({ projectId, docType, title }: Docume
     const [versions, setVersions] = useState<ProjectDocumentVersion[]>([]);
     const [showVersions, setShowVersions] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [hasDoc, setHasDoc] = useState(true);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const loadData = async () => {
         setLoading(true);
         try {
             const doc = await fetchProjectDocument(projectId, docType);
-            if (doc) {
+            if (doc && doc.content.trim()) {
                 setContent(doc.content);
+                setHasDoc(true);
             } else {
-                setContent(`이 프로젝트에 대한 **${title}** 문서가 아직 생성되지 않았습니다.\nMCP 툴을 통해 데이터를 연동하거나 파일을 업로드 해주세요.`);
+                setContent('');
+                setHasDoc(false);
             }
             const vs = await fetchProjectDocumentVersions(projectId, docType);
             setVersions(vs);
@@ -101,82 +105,92 @@ export default function DocumentCanvasView({ projectId, docType, title }: Docume
 
     return (
         <>
-            <div className="w-full h-[calc(100vh-16rem)] flex flex-col xl:flex-row gap-6">
-                {/* Interactive Canvas Area */}
-                <div className="flex-grow min-w-0 xl:w-2/3 h-[50vh] xl:h-full flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                    <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap items-center justify-between gap-3">
-                        <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-indigo-500" />
-                            {title} Canvas
-                        </h3>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="file"
-                                accept=".md,.txt"
-                                className="hidden"
-                                ref={fileInputRef}
-                                onChange={handleFileUpload}
-                            />
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={uploading}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700 disabled:opacity-50"
-                            >
-                                <Upload className="w-4 h-4" />
-                                {uploading ? '업로드...' : '업로드'}
-                            </button>
-                            <button
-                                onClick={() => setShowVersions(true)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700 relative"
-                            >
-                                <History className="w-4 h-4" />
-                                버전 기록
-                                {versions.length > 0 && (
-                                    <span className="absolute -top-2 -right-2 bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                                        {versions.length}
-                                    </span>
-                                )}
-                            </button>
+            {!hasDoc && !loading ? (
+                <div className="w-full flex-grow flex items-center justify-center min-h-[50vh]">
+                    <EmptyStatePrompt
+                        title={`${title} 문서가 없습니다`}
+                        description="이 프로젝트에 대한 아키텍처 및 시스템 레이아웃 다이어그램 데이터가 없습니다. AI에게 초기 설계를 캔버스 형태로 그려달라고 요청해보세요."
+                        suggestedPrompt={`현재 프로젝트의 요구사항에 맞는 기본적인 ${title} 구조를 작성하고, 여기에 \`\`\`mermaid 블록을 포함하여 저장해줘.`}
+                    />
+                </div>
+            ) : (
+                <div className="w-full h-[calc(100vh-16rem)] flex flex-col xl:flex-row gap-6">
+                    {/* Interactive Canvas Area */}
+                    <div className="flex-grow min-w-0 xl:w-2/3 h-[50vh] xl:h-full flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap items-center justify-between gap-3">
+                            <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-indigo-500" />
+                                {title} Canvas
+                            </h3>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="file"
+                                    accept=".md,.txt"
+                                    className="hidden"
+                                    ref={fileInputRef}
+                                    onChange={handleFileUpload}
+                                />
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={uploading}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700 disabled:opacity-50"
+                                >
+                                    <Upload className="w-4 h-4" />
+                                    {uploading ? '업로드...' : '업로드'}
+                                </button>
+                                <button
+                                    onClick={() => setShowVersions(true)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700 relative"
+                                >
+                                    <History className="w-4 h-4" />
+                                    버전 기록
+                                    {versions.length > 0 && (
+                                        <span className="absolute -top-2 -right-2 bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                            {versions.length}
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex-grow w-full relative">
+                            {loading ? (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                                </div>
+                            ) : mermaidChart ? (
+                                <MermaidCanvas chart={mermaidChart} />
+                            ) : (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+                                    <p className="mb-2">렌더링할 Mermaid 다이어그램이 없습니다.</p>
+                                    <p className="text-sm">마크다운에 ```mermaid 블록을 추가하세요.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
-                    <div className="flex-grow w-full relative">
-                        {loading ? (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-                            </div>
-                        ) : mermaidChart ? (
-                            <MermaidCanvas chart={mermaidChart} />
-                        ) : (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
-                                <p className="mb-2">렌더링할 Mermaid 다이어그램이 없습니다.</p>
-                                <p className="text-sm">마크다운에 ```mermaid 블록을 추가하세요.</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
 
-                {/* Markdown Documentation Area */}
-                <div className="w-full xl:w-1/3 h-[50vh] xl:h-[calc(100vh-16rem)] flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                    <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-                        <h3 className="font-semibold text-slate-800 dark:text-slate-200">
-                            상세 명세
-                        </h3>
-                    </div>
-                    <div className="flex-grow p-5 overflow-y-auto prose prose-slate dark:prose-invert max-w-none prose-sm">
-                        {loading ? (
-                            <div className="flex flex-col gap-3 animate-pulse">
-                                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
-                                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
-                                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
-                            </div>
-                        ) : (
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {cleanMarkdown}
-                            </ReactMarkdown>
-                        )}
+                    {/* Markdown Documentation Area */}
+                    <div className="w-full xl:w-1/3 h-[50vh] xl:h-[calc(100vh-16rem)] flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                            <h3 className="font-semibold text-slate-800 dark:text-slate-200">
+                                상세 명세
+                            </h3>
+                        </div>
+                        <div className="flex-grow p-5 overflow-y-auto prose prose-slate dark:prose-invert max-w-none prose-sm">
+                            {loading ? (
+                                <div className="flex flex-col gap-3 animate-pulse">
+                                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+                                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+                                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+                                </div>
+                            ) : (
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {cleanMarkdown}
+                                </ReactMarkdown>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             {/* Version History Modal */}
             {

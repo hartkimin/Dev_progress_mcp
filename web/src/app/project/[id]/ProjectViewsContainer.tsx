@@ -12,16 +12,17 @@ import CodeReviewView from './CodeReviewView';
 import TestDashboardView from './TestDashboardView';
 import DeploymentView from './DeploymentView';
 import AIContextView from './AIContextView';
+import VibePhaseDashboard from './VibePhaseDashboard';
 import { useTranslation } from '@/lib/i18n';
 import {
     LayoutDashboard, Calendar, Bug, BarChart3,
     Box, Database, FileJson,
     GitPullRequest, TestTube2, Server, Rocket,
-    Brain, Lightbulb, FileText
+    Brain, Lightbulb, FileText, Workflow
 } from 'lucide-react';
 
 type ViewType =
-    | 'kanban' | 'calendar' | 'issue_tracker' | 'kpi'
+    | 'kanban' | 'calendar' | 'issue_tracker' | 'kpi' | 'phase_tracker'
     | 'architecture' | 'database' | 'api_spec'
     | 'code_review' | 'test' | 'environment' | 'deploy'
     | 'ai_context' | 'decision' | 'changelog';
@@ -62,6 +63,7 @@ export default function ProjectViewsContainer({
         { key: 'calendar', label: t('tabCalendar'), icon: <Calendar className="w-4 h-4" />, category: 'project' },
         { key: 'issue_tracker', label: t('tabIssueTracker'), icon: <Bug className="w-4 h-4" />, category: 'project' },
         { key: 'kpi', label: 'KPI', icon: <BarChart3 className="w-4 h-4" />, category: 'project' },
+        { key: 'phase_tracker', label: 'Phases', icon: <Workflow className="w-4 h-4" />, category: 'project' },
         // 🏗️ 설계 (How)
         { key: 'architecture', label: t('tabArchitecture'), icon: <Box className="w-4 h-4" />, category: 'design' },
         { key: 'database', label: t('tabDatabase'), icon: <Database className="w-4 h-4" />, category: 'design' },
@@ -129,6 +131,9 @@ export default function ProjectViewsContainer({
             )}
             {view === 'kpi' && (
                 <ProjectHealthDashboard tasks={tasks} categoryStats={categoryStats} projectId={projectId} projectName={projectName} />
+            )}
+            {view === 'phase_tracker' && (
+                <VibePhaseDashboard projectId={projectId} />
             )}
 
             {/* 🏗️ 설계 */}

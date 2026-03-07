@@ -1,6 +1,11 @@
-import crypto from 'crypto';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3333/api/v1';
+
+let globalAccessToken: string | null = null;
+
+export function setAccessToken(token: string | null) {
+    globalAccessToken = token;
+}
 
 function toSnake(obj: any): any {
     if (Array.isArray(obj)) return obj.map(toSnake);
@@ -20,12 +25,18 @@ function toSnake(obj: any): any {
 }
 
 async function fetchApi(path: string, options?: RequestInit) {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options?.headers as Record<string, string> || {})
+    };
+
+    if (globalAccessToken) {
+        headers['Authorization'] = `Bearer ${globalAccessToken}`;
+    }
+
     const res = await fetch(`${API_BASE_URL}${path}`, {
         ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...(options?.headers || {})
-        }
+        headers
     });
 
     if (!res.ok) {
@@ -49,6 +60,7 @@ export interface Project {
 export interface Task {
     id: string;
     project_id: string;
+    assignee_id?: string | null;
     category?: string;
     phase?: string;
     task_type?: string;
@@ -203,22 +215,19 @@ export async function updateTaskDetails(taskId: string, description: string, bef
     return true;
 }
 
+// TODO: Add `title` field to UpdateTaskDetailsDto in NestJS backend API.
+// Currently NestJS validation strips the `title` field since it's not in the DTO.
 export async function updateTaskTitle(taskId: string, title: string, updatedBy: string = 'Unknown'): Promise<boolean> {
-    // A slightly weird one, we do not have a dedicated pure title update in the nest endpoint yet, will modify the API later if needed.
-    // Let's pass it via details although our API might not pick it up if not defined...
-    // Actually, we must add it to the backend. For now, it might be ignored, but let's wire it up.
-    // Quick fix: our UpdateTaskDetailsDto doesn't have title. We will add it or just ignore if NestJS strips it.
-    // In a real scenario we'd patch the backend API.
     await fetchApi(`/tasks/${taskId}/details`, {
         method: 'PATCH',
-        body: JSON.stringify({ title }) // Not currently in NestJS Dto, but we can pass it anyway
+        body: JSON.stringify({ title })
     });
     return true;
 }
 
-export async function setTaskAiProcessing(taskId: string, isProcessing: boolean): Promise<boolean> {
-    // Currently we dropped 'is_ai_processing' from Prisma as the new workflow is API driven. 
-    // We'll return true as a no-op for now to keep frontend happy.
+// TODO: Re-implement AI processing flag when the feature is reintroduced.
+// Removed `is_ai_processing` column from Prisma in the API-driven migration.
+export async function setTaskAiProcessing(_taskId: string, _isProcessing: boolean): Promise<boolean> {
     return true;
 }
 
@@ -235,25 +244,29 @@ export async function addCommentActionDb(taskId: string, author: string, content
     return comment.id;
 }
 
-// User and API Key methods (Stubbed - Bypassed for MVP transition)
+// User and API Key methods (Restored logic connected to real API)
 export async function getUser(userId: string): Promise<User | null> {
-    return { id: userId, name: 'Admin', email: 'admin@vibeplanner.local', created_at: new Date().toISOString() };
+    return await fetchApi(`/auth/profile`);
 }
 
 export async function createApiKey(userId: string, name: string): Promise<{ id: string, key_value: string }> {
-    return { id: 'mock-id', key_value: 'dp_live_mock_key' };
+    return await fetchApi('/keys', {
+        method: 'POST',
+        body: JSON.stringify({ name })
+    });
 }
 
 export async function listApiKeys(userId: string): Promise<ApiKey[]> {
-    return [];
+    return await fetchApi('/keys');
 }
 
 export async function deleteApiKey(userId: string, keyId: string): Promise<boolean> {
+    await fetchApi(`/keys/${keyId}`, { method: 'DELETE' });
     return true;
 }
 
 export async function listUsers(): Promise<User[]> {
-    return [];
+    return await fetchApi('/users');
 }
 
 export async function addUser(id: string, name: string, email: string): Promise<void> { }
@@ -304,4 +317,77 @@ export async function restoreProjectDocumentVersionDb(projectId: string, docType
         method: 'POST'
     });
     return true;
+}
+
+// ─── Analytics API ───────────────────────────────────────────────
+
+export interface ProjectSummary {
+    id: string;
+    name: string;
+    description: string | null;
+    created_at: string;
+    task_summary: {
+        total: number;
+        todo: number;
+        in_progress: number;
+        review: number;
+        done: number;
+        completion_rate: number;
+        dominant_phase: string;
+        last_activity: string | null;
+    };
+}
+
+export interface PhaseBreakdownItem {
+    name: string;
+    total: number;
+    todo: number;
+    in_progress: number;
+    review: number;
+    done: number;
+    completion_rate: number;
+    avg_lead_time_days: number | null;
+}
+
+export interface BurndownPoint {
+    date: string;
+    remaining: number;
+    completed: number;
+    created: number;
+}
+
+export interface CategoryDistItem {
+    name: string;
+    total: number;
+    done: number;
+    in_progress: number;
+    todo: number;
+    review: number;
+    completion_rate: number;
+}
+
+export interface VelocityPoint {
+    week_label: string;
+    week_start: string;
+    completed: number;
+}
+
+export async function getAllProjectSummaries(): Promise<ProjectSummary[]> {
+    return await fetchApi('/analytics/project-summaries');
+}
+
+export async function getPhaseBreakdown(projectId: string): Promise<{ phases: PhaseBreakdownItem[] }> {
+    return await fetchApi(`/analytics/phase-breakdown?projectId=${projectId}`);
+}
+
+export async function getBurndownData(projectId: string, days: number = 30): Promise<{ total_tasks: number; days: number; data_points: BurndownPoint[] }> {
+    return await fetchApi(`/analytics/burndown?projectId=${projectId}&days=${days}`);
+}
+
+export async function getCategoryDistribution(projectId: string): Promise<{ distribution: CategoryDistItem[]; total_tasks: number }> {
+    return await fetchApi(`/analytics/category-distribution?projectId=${projectId}`);
+}
+
+export async function getVelocityHistory(projectId: string, weeks: number = 8): Promise<{ weeks: number; avg_velocity: number; velocity_data: VelocityPoint[] }> {
+    return await fetchApi(`/analytics/velocity?projectId=${projectId}&weeks=${weeks}`);
 }

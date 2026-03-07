@@ -2,17 +2,70 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from '@/lib/i18n';
-import { Bell, CheckSquare, Plus, Edit3, ArrowRight } from 'lucide-react';
+import { Bell, CheckSquare, MessageSquare, UserPlus, Info, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
-import { getRecentGlobalTasksAction } from '@/app/actions';
-import type { Task } from '@/lib/db';
+import { io } from 'socket.io-client';
+import { useSession } from 'next-auth/react';
+
+interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  link?: string;
+  read: boolean;
+  created_at: string;
+}
 
 export default function NotificationBell() {
     const { t } = useTranslation();
+    const { data: session } = useSession();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [notifications, setNotifications] = useState<Task[]>([]);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(false);
+
+    const fetchNotifications = async () => {
+        if (!session) return;
+        setLoading(true);
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3333/api/v1'}/notifications`, {
+                headers: {
+                    'Authorization': `Bearer ${(session as any).accessToken}`
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setNotifications(data);
+            }
+        } catch (err) {
+            console.error('Failed to fetch notifications:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (session) {
+            fetchNotifications();
+
+            const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3333';
+            const socket = io(SOCKET_URL, { transports: ['websocket'] });
+
+            socket.on('connect', () => {
+                if ((session as any).dbUser?.id) {
+                    socket.emit('joinUserNotifications', { userId: (session as any).dbUser.id });
+                }
+            });
+
+            socket.on('notification', (newNotif: Notification) => {
+                setNotifications(prev => [newNotif, ...prev]);
+                // Play sound or show toast
+            });
+
+            return () => { socket.disconnect(); };
+        }
+    }, [session]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -29,52 +82,37 @@ export default function NotificationBell() {
         };
     }, [isOpen]);
 
-    const fetchNotifications = async () => {
-        setLoading(true);
+    const markAsRead = async (id: string) => {
+        if (!session) return;
         try {
-            const tasks = await getRecentGlobalTasksAction(10);
-            setNotifications(tasks);
-        } catch (err) {
-            console.error('Failed to fetch notifications:', err);
-        } finally {
-            setLoading(false);
+            await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3333/api/v1'}/notifications/${id}/read`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${(session as any).accessToken}` }
+            });
+            setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+        } catch (e) {
+            console.error(e);
         }
     };
 
-    useEffect(() => {
-        fetchNotifications();
-        const interval = setInterval(fetchNotifications, 60000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const markAllAsRead = () => {
-        setNotifications([]);
-    };
-
-    const handleOpen = () => {
-        setIsOpen(!isOpen);
-        if (!isOpen) {
-            fetchNotifications();
+    const markAllAsRead = async () => {
+        if (!session) return;
+        try {
+            await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3333/api/v1'}/notifications/read-all`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${(session as any).accessToken}` }
+            });
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        } catch (e) {
+            console.error(e);
         }
     };
 
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'TODO': return <Plus size={12} className="text-slate-500" />;
-            case 'IN_PROGRESS': return <Edit3 size={12} className="text-blue-500" />;
-            case 'REVIEW': return <ArrowRight size={12} className="text-amber-500" />;
-            case 'DONE': return <CheckSquare size={12} className="text-emerald-500" />;
-            default: return <Edit3 size={12} className="text-slate-500" />;
-        }
-    };
-
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case 'TODO': return t('notifNewTask');
-            case 'IN_PROGRESS': return t('notifStarted');
-            case 'REVIEW': return t('notifReview');
-            case 'DONE': return t('notifDone');
-            default: return t('notifUpdate');
+    const getIcon = (type: string) => {
+        switch (type) {
+            case 'TASK_ASSIGNED': return <UserPlus size={16} className="text-blue-500" />;
+            case 'COMMENT_ADDED': return <MessageSquare size={16} className="text-indigo-500" />;
+            default: return <Info size={16} className="text-slate-500" />;
         }
     };
 
@@ -83,82 +121,74 @@ export default function NotificationBell() {
         const date = new Date(dateStr);
         const diffMs = now.getTime() - date.getTime();
         const diffMin = Math.floor(diffMs / 60000);
+        if (diffMin < 1) return 'Just now';
+        if (diffMin < 60) return `${diffMin}m ago`;
         const diffHour = Math.floor(diffMin / 60);
-        const diffDay = Math.floor(diffHour / 24);
-
-        if (diffMin < 1) return t('timeJustNow');
-        if (diffMin < 60) return `${diffMin}${t('timeMinAgo')}`;
-        if (diffHour < 24) return `${diffHour}${t('timeHourAgo')}`;
-        return `${diffDay}${t('timeDayAgo')}`;
+        if (diffHour < 24) return `${diffHour}h ago`;
+        return `${Math.floor(diffHour / 24)}d ago`;
     };
+
+    const unreadCount = notifications.filter(n => !n.read).length;
 
     return (
         <div className="relative z-50 flex items-center" ref={dropdownRef}>
             <button
-                onClick={handleOpen}
-                title={t('notifications')}
-                className="relative flex justify-center items-center p-2 rounded-full transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-indigo-500 dark:hover:text-indigo-400 text-slate-600 dark:text-slate-300"
+                onClick={() => setIsOpen(!isOpen)}
+                className="relative flex justify-center items-center p-2 rounded-full transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-300"
             >
                 <Bell size={18} strokeWidth={2} />
-                {notifications.length > 0 && (
-                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 border-2 border-white dark:border-slate-900 rounded-full animate-pulse"></span>
+                {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white border-2 border-white dark:border-slate-900">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
                 )}
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-96 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 shadow-xl rounded-xl overflow-hidden origin-top-right animate-in fade-in zoom-in duration-200">
-                    <div className="p-3 border-b border-slate-100 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
-                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{t('notifications')}</span>
-                        {notifications.length > 0 && (
-                            <button
-                                onClick={markAllAsRead}
-                                className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline flex items-center gap-1 cursor-pointer"
-                            >
-                                <CheckSquare size={12} />
-                                {t('markAllAsRead')}
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl rounded-xl overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                    <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
+                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">Notifications</span>
+                        {unreadCount > 0 && (
+                            <button onClick={markAllAsRead} className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline">
+                                Mark all as read
                             </button>
                         )}
                     </div>
 
-                    <div className="max-h-80 overflow-y-auto">
+                    <div className="max-h-96 overflow-y-auto">
                         {loading && notifications.length === 0 ? (
-                            <div className="p-6 text-center text-sm text-slate-400">
-                                <div className="w-4 h-4 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin mx-auto mb-2"></div>
-                                {t('loading')}
-                            </div>
+                            <div className="p-8 text-center text-sm text-slate-400 animate-pulse">Loading...</div>
                         ) : notifications.length === 0 ? (
-                            <div className="p-6 text-center text-sm text-slate-400">
-                                {t('noNotifications')}
-                            </div>
+                            <div className="p-8 text-center text-sm text-slate-400 italic">No notifications yet</div>
                         ) : (
-                            notifications.map((task) => (
-                                <Link
-                                    key={task.id}
-                                    href={`/project/${task.project_id}`}
-                                    onClick={() => setIsOpen(false)}
-                                    className="block p-3 border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                            notifications.map((n) => (
+                                <div
+                                    key={n.id}
+                                    className={`p-4 border-b border-slate-100 dark:border-slate-700 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!n.read ? 'bg-indigo-50/30 dark:bg-indigo-500/5' : ''}`}
+                                    onClick={() => !n.read && markAsRead(n.id)}
                                 >
-                                    <div className="flex items-start gap-3">
-                                        <div className="mt-1 p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700/50 shrink-0">
-                                            {getStatusIcon(task.status)}
+                                    <div className="flex gap-3">
+                                        <div className="mt-1 p-2 rounded-full bg-white dark:bg-slate-700 shadow-sm shrink-0 h-fit">
+                                            {getIcon(n.type)}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-0.5">
-                                                <span className="text-[10px] font-bold text-indigo-500 uppercase">{getStatusLabel(task.status)}</span>
-                                                {task.task_type && (
-                                                    <span className="text-[9px] font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">{task.task_type}</span>
+                                            <p className="text-sm font-bold text-slate-900 dark:text-white mb-0.5">{n.title}</p>
+                                            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-2">{n.message}</p>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] text-slate-400 font-medium">{timeAgo(n.created_at)}</span>
+                                                {n.link && (
+                                                    <Link 
+                                                        href={n.link} 
+                                                        className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-0.5 hover:underline"
+                                                        onClick={() => setIsOpen(false)}
+                                                    >
+                                                        View <ExternalLink size={10} />
+                                                    </Link>
                                                 )}
-                                            </div>
-                                            <p className="text-sm text-slate-800 dark:text-slate-200 font-medium truncate">{task.title}</p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                {task.category && (
-                                                    <span className="text-[10px] text-indigo-500 font-semibold">{task.category}</span>
-                                                )}
-                                                <span className="text-[10px] text-slate-400">{timeAgo(task.updated_at)}</span>
                                             </div>
                                         </div>
                                     </div>
-                                </Link>
+                                </div>
                             ))
                         )}
                     </div>

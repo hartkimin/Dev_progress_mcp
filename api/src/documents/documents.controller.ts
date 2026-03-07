@@ -4,7 +4,7 @@ import { UpdateDocumentDto } from './dto/update-document.dto';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('documents')
-@Controller('api/v1/projects/:projectId/documents')
+@Controller('projects/:projectId/documents')
 export class DocumentsController {
     constructor(private readonly documentsService: DocumentsService) { }
 

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Task } from '@/lib/db';
-import { MessageSquarePlus, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { MessageSquarePlus, Sparkles, ArrowRight, CheckCircle2, Code2, FileText } from 'lucide-react';
 
 const PHASES = [
     { id: 'Phase 1', label: 'Ideation', fullName: 'Ideation & Requirements' },
@@ -17,13 +17,20 @@ export default function VibeGuidePanel({ tasks }: { tasks: Task[] }) {
     let currentPhaseIndex = 0;
     const phaseTasks = PHASES.map(p => tasks.filter(t => t.phase === p.fullName));
 
+    // Intelligence: Check specific task types
+    const docTasks = tasks.filter(t => t.taskType === 'Docs');
+    const codingTasks = tasks.filter(t => t.taskType === 'Coding');
+    const promptTasks = tasks.filter(t => t.taskType === 'Prompting');
+
     let recommendation = {
-        title: "Welcome to your new project!",
-        description: "Let's start by defining the core idea and requirements.",
-        action: "Define Requirements",
+        title: "Welcome to VibePlanner!",
+        description: "멋진 아이디어가 있나요? 기획 단계부터 AI와 함께 시작해보세요.",
+        action: "기획 시작하기",
         phase: PHASES[0],
+        icon: <MessageSquarePlus size={18} />
     };
 
+    // Rule-based Recommendation Engine
     for (let i = 0; i < PHASES.length; i++) {
         const tasksInPhase = phaseTasks[i];
         if (tasksInPhase.length > 0) {
@@ -31,44 +38,59 @@ export default function VibeGuidePanel({ tasks }: { tasks: Task[] }) {
             const inProgress = tasksInPhase.some(t => t.status === 'IN_PROGRESS' || t.status === 'REVIEW');
 
             if (allDone) {
-                // If all done, but we are at the last phase
                 if (i === PHASES.length - 1) {
                     recommendation = {
                         title: "Project Completed!",
-                        description: "All phases are done. Great job!",
-                        action: "Review Completed Tasks",
+                        description: "모든 단계가 완료되었습니다. 최종 결과물을 검토하고 배포를 축하하세요!",
+                        action: "프로젝트 리뷰",
                         phase: PHASES[i],
+                        icon: <CheckCircle2 size={18} />
                     };
                     currentPhaseIndex = i;
                 } else {
-                    // Move to next phase if there are no tasks yet in the next phase
+                    const nextPhase = PHASES[i + 1];
                     const nextPhaseTasks = phaseTasks[i + 1];
+
                     if (nextPhaseTasks.length === 0) {
-                        recommendation = {
-                            title: `Start ${PHASES[i + 1].label}`,
-                            description: `You have completed ${PHASES[i].label}. It's time to plan tasks for the next phase.`,
-                            action: `Plan ${PHASES[i + 1].label}`,
-                            phase: PHASES[i + 1],
-                        };
+                        // Intelligent transition
+                        if (i === 1 && docTasks.length > 0) { // After Architecture/Docs
+                            recommendation = {
+                                title: "Ready for Implementation!",
+                                description: "설계가 완료되었습니다. 이제 코딩 단계로 넘어가 보일러플레이트를 생성할 시간입니다.",
+                                action: "구현 단계 시작",
+                                phase: nextPhase,
+                                icon: <Code2 size={18} />
+                            };
+                        } else {
+                            recommendation = {
+                                title: `${nextPhase.label} 단계 진입`,
+                                description: `${PHASES[i].label} 단계가 성공적으로 마무리되었습니다. 다음 여정을 시작하세요.`,
+                                action: `Plan ${nextPhase.label}`,
+                                phase: nextPhase,
+                                icon: <ArrowRight size={18} />
+                            };
+                        }
                         currentPhaseIndex = i + 1;
                         break;
                     }
                 }
             } else if (inProgress) {
                 recommendation = {
-                    title: `Continue ${PHASES[i].label}`,
-                    description: `You have tasks in progress for ${PHASES[i].label}. Keep up the good work!`,
-                    action: "Focus on Active Tasks",
+                    title: `${PHASES[i].label} 진행 중`,
+                    description: "현재 단계의 태스크들이 활발히 진행되고 있습니다. AI 사이드바를 활용해 막히는 부분을 해결해보세요.",
+                    action: "활성 태스크 집중",
                     phase: PHASES[i],
+                    icon: <ArrowRight size={18} />
                 };
                 currentPhaseIndex = i;
                 break;
             } else {
                 recommendation = {
-                    title: `Begin ${PHASES[i].label} Work`,
-                    description: `You have planned tasks for ${PHASES[i].label}. Pick one and start working on it.`,
-                    action: "Start a Task",
+                    title: `${PHASES[i].label} 시작 준비 완료`,
+                    description: "기획된 태스크들이 대기 중입니다. 가장 먼저 처리할 작업을 선택해 시작하세요.",
+                    action: "태스크 시작",
                     phase: PHASES[i],
+                    icon: <FileText size={18} />
                 };
                 currentPhaseIndex = i;
                 break;
@@ -78,10 +100,11 @@ export default function VibeGuidePanel({ tasks }: { tasks: Task[] }) {
 
     if (tasks.length === 0) {
         recommendation = {
-            title: "Let's Vibe Code!",
-            description: "To get started, create your first task in the Ideation phase. What are we building?",
-            action: "Create First Task",
+            title: "Let's Vibe!",
+            description: "새로운 프로젝트가 생성되었습니다. 첫 번째 기획 태스크를 만들어 아이디어를 구체화해보세요.",
+            action: "첫 태스크 생성",
             phase: PHASES[0],
+            icon: <Sparkles size={18} />
         };
     }
 
@@ -95,7 +118,7 @@ export default function VibeGuidePanel({ tasks }: { tasks: Task[] }) {
                 <div>
                     <div className="flex items-center gap-2 mb-2">
                         <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                            What&apos;s Next?
+                            Vibe Guide
                         </span>
                         <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
                             Current: {recommendation.phase.fullName}
@@ -111,13 +134,7 @@ export default function VibeGuidePanel({ tasks }: { tasks: Task[] }) {
 
                 <div className="flex-shrink-0">
                     <button className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm shadow-indigo-600/20 transition-all active:scale-95 font-medium whitespace-nowrap">
-                        {recommendation.action === "Review Completed Tasks" ? (
-                            <CheckCircle2 size={18} />
-                        ) : recommendation.action === "Focus on Active Tasks" ? (
-                            <ArrowRight size={18} />
-                        ) : (
-                            <MessageSquarePlus size={18} />
-                        )}
+                        {recommendation.icon}
                         {recommendation.action}
                     </button>
                 </div>

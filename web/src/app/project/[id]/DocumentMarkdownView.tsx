@@ -6,6 +6,7 @@ import type { ProjectDocumentVersion } from '@/lib/db';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { History, Upload, Clock, X, FileText } from 'lucide-react';
+import EmptyStatePrompt from '@/components/EmptyStatePrompt';
 
 interface DocumentMarkdownViewProps {
     projectId: string;
@@ -19,16 +20,19 @@ export default function DocumentMarkdownView({ projectId, docType, title }: Docu
     const [versions, setVersions] = useState<ProjectDocumentVersion[]>([]);
     const [showVersions, setShowVersions] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [hasDoc, setHasDoc] = useState(true);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const loadData = async () => {
         setLoading(true);
         try {
             const doc = await fetchProjectDocument(projectId, docType);
-            if (doc) {
+            if (doc && doc.content.trim()) {
                 setContent(doc.content);
+                setHasDoc(true);
             } else {
-                setContent(`이 프로젝트에 대한 **${title}** 문서가 아직 생성되지 않았습니다.\nMCP 툴을 통해 데이터를 연동하거나 파일을 업로드 해주세요.`);
+                setContent('');
+                setHasDoc(false);
             }
             const vs = await fetchProjectDocumentVersions(projectId, docType);
             setVersions(vs);
@@ -82,61 +86,71 @@ export default function DocumentMarkdownView({ projectId, docType, title }: Docu
 
     return (
         <>
-            <div className="w-full h-[calc(100vh-16rem)] flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                {/* Header */}
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap items-center justify-between gap-3 shrink-0">
-                    <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-indigo-500" />
-                        {title}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="file"
-                            accept=".md,.txt"
-                            className="hidden"
-                            ref={fileInputRef}
-                            onChange={handleFileUpload}
-                        />
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={uploading}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md shadow-sm hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700 disabled:opacity-50"
-                        >
-                            <Upload className="w-4 h-4" />
-                            {uploading ? '업로드...' : '업로드'}
-                        </button>
-                        <button
-                            onClick={() => setShowVersions(true)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md shadow-sm hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700 relative"
-                        >
-                            <History className="w-4 h-4" />
-                            버전 기록
-                            {versions.length > 0 && (
-                                <span className="absolute -top-2 -right-2 bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                                    {versions.length}
-                                </span>
-                            )}
-                        </button>
+            {!hasDoc && !loading ? (
+                <div className="w-full flex-grow flex items-center justify-center min-h-[50vh]">
+                    <EmptyStatePrompt
+                        title={`${title} 문서가 없습니다`}
+                        description="이 주제에 작성된 마크다운 데이터가 없습니다. AI에게 초기 문서를 생성해 달라고 요청해보세요."
+                        suggestedPrompt={`현재 프로젝트의 성격에 맞춰 ${title}에 관한 상세 명세를 마크다운 형식으로 작성해서 이 항목에 저장해줘.`}
+                    />
+                </div>
+            ) : (
+                <div className="w-full h-[calc(100vh-16rem)] flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    {/* Header */}
+                    <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                        <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-indigo-500" />
+                            {title}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="file"
+                                accept=".md,.txt"
+                                className="hidden"
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                            />
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={uploading}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md shadow-sm hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700 disabled:opacity-50"
+                            >
+                                <Upload className="w-4 h-4" />
+                                {uploading ? '업로드...' : '업로드'}
+                            </button>
+                            <button
+                                onClick={() => setShowVersions(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md shadow-sm hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700 relative"
+                            >
+                                <History className="w-4 h-4" />
+                                버전 기록
+                                {versions.length > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                        {versions.length}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Full-width Markdown Content */}
+                    <div className="flex-grow p-8 overflow-y-auto prose prose-slate dark:prose-invert max-w-none prose-sm lg:prose-base">
+                        {loading ? (
+                            <div className="flex flex-col gap-3 animate-pulse">
+                                <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+                                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+                                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+                                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+                                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3"></div>
+                            </div>
+                        ) : (
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {content}
+                            </ReactMarkdown>
+                        )}
                     </div>
                 </div>
-
-                {/* Full-width Markdown Content */}
-                <div className="flex-grow p-8 overflow-y-auto prose prose-slate dark:prose-invert max-w-none prose-sm lg:prose-base">
-                    {loading ? (
-                        <div className="flex flex-col gap-3 animate-pulse">
-                            <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
-                            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
-                            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
-                            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
-                            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3"></div>
-                        </div>
-                    ) : (
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {content}
-                        </ReactMarkdown>
-                    )}
-                </div>
-            </div>
+            )}
 
             {/* Version History Modal */}
             {showVersions && (

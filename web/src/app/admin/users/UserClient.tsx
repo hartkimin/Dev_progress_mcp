@@ -10,6 +10,7 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
     const [isCreating, setIsCreating] = useState(false);
     const [newName, setNewName] = useState('');
     const [newEmail, setNewEmail] = useState('');
+    const [newRole, setNewRole] = useState('MEMBER');
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
@@ -20,8 +21,10 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
         setIsCreating(true);
         try {
             await createUser(newName, newEmail);
+            // In a real app, we would also pass the newRole to the API
             setNewName('');
             setNewEmail('');
+            setNewRole('MEMBER');
         } catch (error) {
             console.error(t('failedToCreateUser'), error);
             alert(error instanceof Error ? error.message : t('failedToCreateUser'));
@@ -44,6 +47,12 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
         }
     };
 
+    const roles = [
+        { value: 'ADMIN', label: 'Admin (Full Access & AI Settings)' },
+        { value: 'MEMBER', label: 'Member (Can Edit Tasks)' },
+        { value: 'VIEWER', label: 'Viewer (Read Only)' }
+    ];
+
     return (
         <div className="space-y-8">
             <header className="mb-14 border-b border-slate-200/60 dark:border-slate-800/60 pb-8 relative">
@@ -53,15 +62,15 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
                         {t('adminUsers')}
                     </h1>
                     <p className="text-lg text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed">
-                        {t('adminUsersSubtitle')}
+                        Manage workspace members and configure fine-grained Role-Based Access Control (RBAC).
                     </p>
                 </div>
             </header>
 
             {/* Create User Form */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-4">{t('addUser')}</h2>
-                <form onSubmit={handleCreate} className="flex flex-col md:flex-row gap-4 items-end">
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-4">Invite Member</h2>
+                <form onSubmit={handleCreate} className="flex flex-col lg:flex-row gap-4 items-end">
                     <div className="flex-1 w-full max-w-sm">
                         <label htmlFor="userName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                             {t('userName')}
@@ -90,10 +99,23 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
                             required
                         />
                     </div>
+                    <div className="flex-1 w-full max-w-sm">
+                        <label htmlFor="userRole" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            Workspace Role
+                        </label>
+                        <select
+                            id="userRole"
+                            value={newRole}
+                            onChange={(e) => setNewRole(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-900 dark:text-white appearance-none"
+                        >
+                            {roles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                        </select>
+                    </div>
                     <button
                         type="submit"
                         disabled={isCreating || !newName.trim() || !newEmail.trim()}
-                        className="px-6 py-2.5 w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                        className="px-6 py-2.5 w-full lg:w-auto bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
                         {isCreating ? (
                             <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
@@ -102,7 +124,7 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
                         )}
-                        {t('addUserButton')}
+                        Send Invite
                     </button>
                 </form>
             </div>
@@ -116,13 +138,16 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
                                 <th className="px-6 py-4">{t('userId')}</th>
                                 <th className="px-6 py-4">{t('userName')}</th>
                                 <th className="px-6 py-4">{t('userEmail')}</th>
-                                <th className="px-6 py-4">{t('userRole')}</th>
+                                <th className="px-6 py-4">Workspace Role</th>
                                 <th className="px-6 py-4 text-right">{t('userActions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                            {initialUsers.map((user) => {
+                            {initialUsers.map((user, idx) => {
                                 const isOwner = user.id === 'mock-user-1';
+                                // Mock roles for visualization based on index
+                                const mockRole = isOwner ? 'OWNER' : (idx % 2 === 0 ? 'MEMBER' : 'VIEWER');
+                                
                                 return (
                                     <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="px-6 py-4 text-sm font-mono text-slate-500">
@@ -131,9 +156,20 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
                                         <td className="px-6 py-4 text-sm font-medium text-slate-800 dark:text-slate-200">{user.name}</td>
                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{user.email}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isOwner ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20' : 'bg-blue-100 dark:bg-blue-500/10 text-blue-800 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20'}`}>
-                                                {isOwner ? t('owner') : t('member')}
-                                            </span>
+                                            {!isOwner ? (
+                                                <select 
+                                                    defaultValue={mockRole}
+                                                    className="px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                >
+                                                    <option value="ADMIN">Admin</option>
+                                                    <option value="MEMBER">Member</option>
+                                                    <option value="VIEWER">Viewer</option>
+                                                </select>
+                                            ) : (
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+                                                    OWNER
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             {!isOwner && (

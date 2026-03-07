@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useTransition, useState } from 'react';
 import ProjectActions from './ProjectActions';
 import { useTranslation } from '@/lib/i18n';
-import type { Project } from '@/lib/db';
+import type { ProjectSummary } from '@/lib/db';
 import { createProjectAction } from '@/app/actions';
+import { AlertTriangle, TrendingUp, Clock } from 'lucide-react';
 
 function CreateProjectModal({ onClose, onCreate }: { onClose: () => void; onCreate: (name: string, desc: string, mode: 'newbie' | 'import') => void }) {
     const [name, setName] = useState('');
@@ -151,7 +152,162 @@ function CreateProjectButton() {
     );
 }
 
-export default function DashboardContent({ projects }: { projects: Project[] }) {
+function timeAgo(dateStr: string | null): string {
+    if (!dateStr) return '-';
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+    if (diffMin < 1) return '방금 전';
+    if (diffMin < 60) return `${diffMin}분 전`;
+    if (diffHour < 24) return `${diffHour}시간 전`;
+    if (diffDay < 7) return `${diffDay}일 전`;
+    return date.toLocaleDateString('ko-KR');
+}
+
+function StatusDot({ count, color, label }: { count: number; color: string; label: string }) {
+    if (count === 0) return null;
+    return (
+        <span className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            <span className={`w-2 h-2 rounded-full ${color}`}></span>
+            {count}
+        </span>
+    );
+}
+
+function VibeAlertPanel({ projects }: { projects: ProjectSummary[] }) {
+    // Generate AI-driven alerts based on heuristics
+    const alerts = projects.map(p => {
+        const now = new Date().getTime();
+        const lastAct = p.task_summary.last_activity ? new Date(p.task_summary.last_activity).getTime() : now;
+        const daysStalled = (now - lastAct) / (1000 * 3600 * 24);
+
+        if (daysStalled > 3 && p.task_summary.in_progress > 0) {
+            return { type: 'stalled', project: p, msg: `구현 단계에 진입했으나 3일간 업데이트가 없습니다. 진행 상황을 점검하세요.` };
+        }
+        if (p.task_summary.todo > 30 && p.task_summary.completion_rate < 10) {
+            return { type: 'scope_creep', project: p, msg: `기획 대비 태스크 추가 속도가 너무 빠릅니다 (Scope Creep 위험).` };
+        }
+        return null;
+    }).filter(Boolean);
+
+    if (alerts.length === 0) return null;
+
+    return (
+        <div className="mb-12 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+                <AlertTriangle className="text-rose-500" size={20} />
+                <h3 className="text-lg font-bold text-rose-900 dark:text-rose-100">Vibe Alerts (Risk Radar)</h3>
+                <span className="ml-auto text-xs font-semibold px-2 py-1 bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300 rounded-full">
+                    {alerts.length} Issues Detected
+                </span>
+            </div>
+            <div className="space-y-3">
+                {alerts.map((alert, idx) => (
+                    <div key={idx} className="flex items-start gap-3 bg-white dark:bg-slate-900 p-4 rounded-xl border border-rose-100 dark:border-rose-900/30">
+                        {alert?.type === 'stalled' ? <Clock className="text-amber-500 mt-0.5" size={18} /> : <TrendingUp className="text-rose-500 mt-0.5" size={18} />}
+                        <div>
+                            <Link href={`/project/${alert?.project.id}`} className="font-semibold text-slate-800 dark:text-slate-200 hover:text-indigo-600 transition-colors">
+                                {alert?.project.name}
+                            </Link>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{alert?.msg}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function ProjectCard({ project }: { project: ProjectSummary }) {
+    const s = project.task_summary;
+    const hasPhase = s.dominant_phase && s.dominant_phase.length > 0;
+
+    return (
+        <div className="relative group">
+            <ProjectActions project={{ id: project.id, name: project.name, description: project.description || '' }} />
+
+            <Link
+                href={`/project/${project.id}`}
+                className="block h-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-slate-800/60 hover:border-indigo-400/50 dark:hover:border-indigo-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1.5 overflow-hidden relative"
+            >
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-gradient-to-br from-indigo-500/10 to-transparent dark:from-indigo-500/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+
+                <div className="relative z-10 p-6 flex flex-col h-full">
+                    {/* Header */}
+                    <div className="mb-4">
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-600 group-hover:to-cyan-600 dark:group-hover:from-indigo-400 dark:group-hover:to-cyan-400 transition-all duration-300 leading-tight">
+                            {project.name}
+                        </h3>
+                        {project.description && (
+                            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                                {project.description}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Progress Bar & Completion */}
+                    {s.total > 0 && (
+                        <div className="mb-4">
+                            <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                                    {s.completion_rate}%
+                                </span>
+                                <span className="text-xs font-medium text-slate-400">
+                                    {s.done}/{s.total} tasks
+                                </span>
+                            </div>
+                            <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div
+                                    className={`h-full rounded-full transition-all duration-700 ${s.completion_rate === 100
+                                        ? 'bg-gradient-to-r from-emerald-500 to-emerald-400'
+                                        : 'bg-gradient-to-r from-indigo-500 to-cyan-500'
+                                        }`}
+                                    style={{ width: `${s.completion_rate}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Status Breakdown */}
+                    {s.total > 0 && (
+                        <div className="flex items-center gap-3 mb-4">
+                            <StatusDot count={s.todo} color="bg-slate-400" label="TODO" />
+                            <StatusDot count={s.in_progress} color="bg-blue-500" label="Progress" />
+                            <StatusDot count={s.review} color="bg-amber-500" label="Review" />
+                            <StatusDot count={s.done} color="bg-emerald-500" label="Done" />
+                        </div>
+                    )}
+
+                    {/* Footer: Phase & Activity */}
+                    <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 group-hover:border-indigo-200 dark:group-hover:border-indigo-500/20 transition-colors">
+                        <div className="flex flex-col gap-1 min-w-0">
+                            {hasPhase && (
+                                <span className="text-[10px] font-bold uppercase tracking-wide text-indigo-500 dark:text-indigo-400 truncate">
+                                    🎯 {s.dominant_phase}
+                                </span>
+                            )}
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                {timeAgo(s.last_activity)}
+                            </span>
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/10 flex items-center justify-center transition-colors shrink-0">
+                            <svg className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </Link>
+        </div>
+    );
+}
+
+export default function DashboardContent({ projectSummaries }: { projectSummaries: ProjectSummary[] }) {
     const { t } = useTranslation();
 
     return (
@@ -168,6 +324,8 @@ export default function DashboardContent({ projects }: { projects: Project[] }) 
             </header>
 
             <section>
+                <VibeAlertPanel projects={projectSummaries} />
+
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
                     <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
                         <span className="w-2.5 h-8 bg-gradient-to-b from-indigo-500 to-cyan-500 rounded-full shadow-lg shadow-indigo-500/20 inline-block"></span>
@@ -176,12 +334,12 @@ export default function DashboardContent({ projects }: { projects: Project[] }) 
                     <div className="flex flex-wrap items-center gap-3">
                         <CreateProjectButton />
                         <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
-                            {projects.length} {projects.length === 1 ? (t('project') || "Project") : (t('projects') || "Projects")}
+                            {projectSummaries.length} {projectSummaries.length === 1 ? (t('project') || "Project") : (t('projects') || "Projects")}
                         </div>
                     </div>
                 </div>
 
-                {projects.length === 0 ? (
+                {projectSummaries.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 px-4 bg-white dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 shadow-sm dark:shadow-none">
                         <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-4">
                             <svg className="w-8 h-8 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -195,40 +353,8 @@ export default function DashboardContent({ projects }: { projects: Project[] }) 
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {projects.map((project) => (
-                            <div key={project.id} className="relative group">
-                                <ProjectActions project={project} />
-
-                                <Link
-                                    href={`/project/${project.id}`}
-                                    className="block h-full p-6 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/60 dark:border-slate-800/60 hover:border-indigo-400/50 dark:hover:border-indigo-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1.5 overflow-hidden relative"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                    <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-gradient-to-br from-indigo-500/10 to-transparent dark:from-indigo-500/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
-
-                                    <div className="relative z-10 flex flex-col h-full">
-                                        <div className="mt-2 mb-6">
-                                            <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-600 group-hover:to-cyan-600 dark:group-hover:from-indigo-400 dark:group-hover:to-cyan-400 transition-all duration-300">
-                                                {project.name}
-                                            </h3>
-                                            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed">
-                                                {project.description || (t('noDescriptionProvided') || "No description provided.")}
-                                            </p>
-                                        </div>
-
-                                        <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 group-hover:border-indigo-200 dark:group-hover:border-indigo-500/20 transition-colors">
-                                            <span className="text-xs font-mono text-slate-400 dark:text-slate-500">
-                                                ID: {project.id.slice(0, 8)}
-                                            </span>
-                                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/10 flex items-center justify-center transition-colors">
-                                                <svg className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Link>
-                            </div>
+                        {projectSummaries.map((project) => (
+                            <ProjectCard key={project.id} project={project} />
                         ))}
                     </div>
                 )}

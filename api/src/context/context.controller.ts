@@ -3,7 +3,7 @@ import { ContextService } from './context.service';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('context')
-@Controller('api/v1/projects/:projectId/context')
+@Controller('projects/:projectId/context')
 export class ContextController {
     constructor(private readonly contextService: ContextService) { }
 

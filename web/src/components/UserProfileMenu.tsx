@@ -1,80 +1,93 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useTranslation } from '@/lib/i18n';
-import { Settings, CreditCard, LogOut } from 'lucide-react';
-import Link from 'next/link';
+import React, { useState, useRef, useEffect } from 'react';
+import { User, LogOut, Settings, Bell, ChevronDown, LogIn } from 'lucide-react';
+import { useSession, signOut, signIn } from 'next-auth/react';
 
-export default function UserProfileMenu() {
-    const { t } = useTranslation();
-    const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+const UserProfileMenu: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { data: session, status } = useSession();
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
 
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isOpen]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
+  if (status === 'loading') {
+    return <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse"></div>;
+  }
+
+  if (status === 'unauthenticated') {
     return (
-        <div className="relative z-50 flex items-center ml-1" ref={dropdownRef}>
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xs shadow-sm hover:shadow-md transition-all hover:scale-105"
-                title={t('adminDeveloper')}
-            >
-                AD
-            </button>
-
-            {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-60 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 shadow-xl rounded-xl overflow-hidden origin-top-right animate-in fade-in zoom-in duration-200">
-                    <div className="p-4 border-b border-slate-100 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-900/50">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
-                                AD
-                            </div>
-                            <div className="flex-1 overflow-hidden min-w-0">
-                                <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{t('adminDeveloper')}</p>
-                                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-0.5">{t('proTierActive')}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="p-2 space-y-1">
-                        <Link href="/admin/settings" onClick={() => setIsOpen(false)} className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors cursor-pointer text-left">
-                            <Settings size={16} />
-                            <span>{t('profileSettings') || 'Profile Settings'}</span>
-                        </Link>
-                        <Link href="/admin/billing" onClick={() => setIsOpen(false)} className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors cursor-pointer text-left">
-                            <CreditCard size={16} />
-                            <span>{t('billing') || 'Billing & Plan'}</span>
-                            <span className="ml-auto text-[10px] uppercase font-bold tracking-wider text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 px-1.5 py-0.5 rounded">Pro</span>
-                        </Link>
-                    </div>
-
-                    <div className="p-2 border-t border-slate-100 dark:border-slate-700/80">
-                        <button
-                            onClick={() => {
-                                alert(t('signedOutMsg') || 'You have been signed out successfully.');
-                                setIsOpen(false);
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer text-left"
-                        >
-                            <LogOut size={16} />
-                            <span>{t('signOut') || 'Sign Out'}</span>
-                        </button>
-                    </div>
-                </div>
-            )}
-        </div>
+      <button
+        onClick={() => signIn()}
+        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors border border-slate-200 dark:border-slate-700"
+      >
+        <LogIn size={16} />
+        <span>Sign In</span>
+      </button>
     );
-}
+  }
+
+  const user = session?.user;
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 p-1 pr-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+      >
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold overflow-hidden border border-white/20 shadow-sm">
+          {user?.image ? (
+            <img src={user.image} alt={user.name || ''} className="w-full h-full object-cover" />
+          ) : (
+            user?.name?.charAt(0) || 'U'
+          )}
+        </div>
+        <div className="hidden sm:flex flex-col items-start leading-tight">
+          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 max-w-[100px] truncate">{user?.name}</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Free Plan</span>
+        </div>
+        <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 py-2 z-50 animate-in fade-in zoom-in duration-200 origin-top-right">
+          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 mb-2">
+            <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user?.name}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
+          </div>
+
+          <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+            <User size={16} className="text-slate-400" />
+            <span>My Profile</span>
+          </button>
+          
+          <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+            <Settings size={16} className="text-slate-400" />
+            <span>Account Settings</span>
+          </button>
+
+          <div className="my-2 border-t border-slate-100 dark:border-slate-800"></div>
+
+          <button 
+            onClick={() => signOut()}
+            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+          >
+            <LogOut size={16} />
+            <span>Sign Out</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default UserProfileMenu;

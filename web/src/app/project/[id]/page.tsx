@@ -43,7 +43,7 @@ export default async function ProjectBoard({ params }: { params: Promise<{ id: s
     return (
         <main className="min-h-full text-slate-700 dark:text-slate-300 font-sans selection:bg-indigo-500/30 p-4 sm:p-6 lg:p-8 transition-colors duration-300">
             {/* Realtime component injection */}
-            <AutoRefresh interval={3000} />
+            <AutoRefresh projectId={id} />
 
             <div className="w-full flex flex-col items-start gap-8">
                 {/* Header */}

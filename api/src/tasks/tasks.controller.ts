@@ -5,7 +5,7 @@ import { UpdateTaskStatusDto, UpdateTaskDetailsDto } from './dto/update-task.dto
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('tasks')
-@Controller('api/v1/tasks')
+@Controller('tasks')
 export class TasksController {
     constructor(private readonly tasksService: TasksService) { }
 

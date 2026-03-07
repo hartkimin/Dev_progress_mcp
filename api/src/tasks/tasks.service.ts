@@ -2,17 +2,23 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskStatusDto, UpdateTaskDetailsDto } from './dto/update-task.dto';
+import { EventsGateway } from '../events/events.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class TasksService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private eventsGateway: EventsGateway,
+        private notificationsService: NotificationsService,
+    ) { }
 
     async create(dto: CreateTaskDto) {
         // Validate project existence
         const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
         if (!project) throw new NotFoundException('Project not found');
 
-        return this.prisma.task.create({
+        const task = await this.prisma.task.create({
             data: {
                 projectId: dto.projectId,
                 title: dto.title,
@@ -24,8 +30,21 @@ export class TasksService {
                 status: dto.status || 'TODO',
                 startDate: dto.startDate ? new Date(dto.startDate) : null,
                 dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+                assigneeId: dto['assigneeId'],
             }
         });
+
+        if (task.assigneeId) {
+            await this.notificationsService.create(task.assigneeId, {
+                type: 'TASK_ASSIGNED',
+                title: 'New task assigned',
+                message: `You have been assigned to: ${task.title}`,
+                link: `/project/${task.projectId}?task=${task.id}`,
+            });
+        }
+
+        this.eventsGateway.broadcastTaskCreated(task.projectId, task);
+        return task;
     }
 
     async findAllByProject(projectId: string) {
@@ -33,6 +52,9 @@ export class TasksService {
             where: { projectId },
             orderBy: { createdAt: 'asc' },
             include: {
+                assignee: {
+                    select: { id: true, name: true, email: true }
+                },
                 _count: {
                     select: { comments: true }
                 }
@@ -43,7 +65,12 @@ export class TasksService {
     async findOne(id: string) {
         const task = await this.prisma.task.findUnique({
             where: { id },
-            include: { comments: true }
+            include: { 
+                comments: {
+                    include: { authorDb: { select: { id: true, name: true } } }
+                },
+                assignee: { select: { id: true, name: true, email: true } }
+            }
         });
         if (!task) throw new NotFoundException('Task not found');
         return task;
@@ -61,11 +88,6 @@ export class TasksService {
             }
         }
 
-        if (dto.status === 'DONE') {
-            // DONE으로 넘길 때는 추가 확인이 필요할 수 있음 (예: 특정 타입의 태스크인 경우 리뷰 승인 상태 확인 등)
-            // 현재는 간단한 예시로 통과
-        }
-
         const dataToUpdate: any = {
             status: dto.status,
             updatedBy: 'API User'
@@ -77,10 +99,12 @@ export class TasksService {
             dataToUpdate.completedAt = new Date();
         }
 
-        return this.prisma.task.update({
+        const updatedTask = await this.prisma.task.update({
             where: { id },
             data: dataToUpdate
         });
+        this.eventsGateway.broadcastTaskUpdate(updatedTask.projectId, updatedTask);
+        return updatedTask;
     }
 
     async updateDetails(id: string, dto: UpdateTaskDetailsDto) {
@@ -88,7 +112,10 @@ export class TasksService {
         const task = await this.prisma.task.findUnique({ where: { id } });
         if (!task) throw new NotFoundException('Task not found');
 
-        return this.prisma.task.update({
+        const oldAssigneeId = task.assigneeId;
+        const newAssigneeId = dto['assigneeId'];
+
+        const updatedTask = await this.prisma.task.update({
             where: { id },
             data: {
                 description: dto.description,
@@ -99,16 +126,32 @@ export class TasksService {
                 scale: dto.scale,
                 startDate: dto.startDate ? new Date(dto.startDate) : undefined,
                 dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
-                updatedBy: 'API User'
+                updatedBy: 'API User',
+                assigneeId: newAssigneeId,
+                ...(dto['title'] ? { title: dto['title'] } : {}) 
             }
         });
+
+        if (newAssigneeId && newAssigneeId !== oldAssigneeId) {
+            await this.notificationsService.create(newAssigneeId, {
+                type: 'TASK_ASSIGNED',
+                title: 'Task assigned to you',
+                message: `You have been assigned to: ${updatedTask.title}`,
+                link: `/project/${updatedTask.projectId}?task=${updatedTask.id}`,
+            });
+        }
+
+        this.eventsGateway.broadcastTaskUpdate(updatedTask.projectId, updatedTask);
+        return updatedTask;
     }
 
     async remove(id: string) {
         try {
-            return await this.prisma.task.delete({
+            const task = await this.prisma.task.delete({
                 where: { id }
             });
+            this.eventsGateway.broadcastTaskDeleted(task.projectId, { id });
+            return task;
         } catch (e) {
             throw new NotFoundException('Task not found or delete failed');
         }

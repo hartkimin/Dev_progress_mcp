@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Task } from '@/lib/db';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from 'lucide-react';
+import EmptyStatePrompt from '@/components/EmptyStatePrompt';
 
 export default function CalendarViewClient({
     tasks,
@@ -96,97 +97,105 @@ export default function CalendarViewClient({
 
     return (
         <>
-            <div className="w-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
-                    <div className="flex items-center gap-4">
-                        <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-slate-100">
-                            <CalendarIcon className="w-5 h-5 text-indigo-500" />
-                            {currentDate.getFullYear()}년 {monthNames[currentDate.getMonth()]}
-                        </h2>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={handleToday} className="px-3 py-1.5 text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                            오늘
-                        </button>
-                        <div className="flex border border-slate-200 dark:border-slate-700 rounded-md overflow-hidden">
-                            <button onClick={handlePrevMonth} className="p-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition border-r border-slate-200 dark:border-slate-700">
-                                <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-                            </button>
-                            <button onClick={handleNextMonth} className="p-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                                <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-                            </button>
+            {tasks.length === 0 ? (
+                <EmptyStatePrompt
+                    title="일정이 없습니다"
+                    description="달력에 표시할 태스크가 아직 없습니다. 태스크를 생성하거나 AI에게 일정을 만들어 달라고 요청해보세요."
+                    suggestedPrompt="현재 프로젝트의 마일스톤에 맞게 이번 주에 수행할 주요 프론트엔드 및 백엔드 태스크 5개를 달력 일정(마감일 포함)으로 생성해줘."
+                />
+            ) : (
+                <div className="w-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
+                        <div className="flex items-center gap-4">
+                            <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-slate-100">
+                                <CalendarIcon className="w-5 h-5 text-indigo-500" />
+                                {currentDate.getFullYear()}년 {monthNames[currentDate.getMonth()]}
+                            </h2>
                         </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
-                    {dayNames.map(day => (
-                        <div key={day} className="py-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-r border-slate-200 dark:border-slate-800 last:border-r-0">
-                            {day}
-                        </div>
-                    ))}
-                </div>
-
-                <div className="grid grid-cols-7 auto-rows-[minmax(120px,1fr)] bg-slate-100 dark:bg-slate-800 gap-[1px]">
-                    {/* Empty cells for previous month */}
-                    {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-                        <div key={`empty-${i}`} className="bg-white dark:bg-slate-900 p-2 min-h-[120px] opacity-50"></div>
-                    ))}
-
-                    {/* Days of current month */}
-                    {Array.from({ length: daysInMonth }).map((_, i) => {
-                        const day = i + 1;
-                        const dateTasks = getTasksForDate(day);
-                        const isToday = new Date().getDate() === day && new Date().getMonth() === currentDate.getMonth() && new Date().getFullYear() === currentDate.getFullYear();
-                        const visibleTasks = dateTasks.slice(0, MAX_VISIBLE_TASKS);
-                        const hiddenCount = dateTasks.length - MAX_VISIBLE_TASKS;
-
-                        return (
-                            <div
-                                key={day}
-                                className={`bg-white dark:bg-slate-900 p-2 min-h-[120px] flex flex-col gap-1 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer`}
-                                onClick={() => {
-                                    if (dateTasks.length > 0) {
-                                        setSelectedDay({ day, tasks: dateTasks });
-                                    }
-                                }}
-                            >
-                                <div className="flex justify-between items-start mb-1">
-                                    <span className={`text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full ${isToday ? 'bg-indigo-600 text-white' : 'text-slate-700 dark:text-slate-300'}`}>
-                                        {day}
-                                    </span>
-                                    {dateTasks.length > 0 && (
-                                        <span className="text-[10px] font-semibold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded-full">
-                                            {dateTasks.length}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="flex flex-col gap-1 overflow-hidden flex-grow">
-                                    {visibleTasks.map(task => (
-                                        <div
-                                            key={task.id}
-                                            className={`text-[10px] font-medium px-2 py-1 rounded border truncate ${statusColors[task.status] || statusColors['TODO']}`}
-                                            title={task.title}
-                                        >
-                                            {task.title}
-                                        </div>
-                                    ))}
-                                    {hiddenCount > 0 && (
-                                        <div className="text-[10px] font-semibold text-indigo-500 px-2 py-0.5 text-center hover:text-indigo-700 transition-colors">
-                                            +{hiddenCount}개 더보기
-                                        </div>
-                                    )}
-                                </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={handleToday} className="px-3 py-1.5 text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                                오늘
+                            </button>
+                            <div className="flex border border-slate-200 dark:border-slate-700 rounded-md overflow-hidden">
+                                <button onClick={handlePrevMonth} className="p-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition border-r border-slate-200 dark:border-slate-700">
+                                    <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+                                </button>
+                                <button onClick={handleNextMonth} className="p-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                                    <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+                                </button>
                             </div>
-                        );
-                    })}
+                        </div>
+                    </div>
 
-                    {/* Empty cells for next month to complete the grid */}
-                    {Array.from({ length: (7 - ((firstDayOfMonth + daysInMonth) % 7)) % 7 }).map((_, i) => (
-                        <div key={`empty-end-${i}`} className="bg-white dark:bg-slate-900 p-2 min-h-[120px] opacity-50"></div>
-                    ))}
+                    <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
+                        {dayNames.map(day => (
+                            <div key={day} className="py-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-r border-slate-200 dark:border-slate-800 last:border-r-0">
+                                {day}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-7 auto-rows-[minmax(120px,1fr)] bg-slate-100 dark:bg-slate-800 gap-[1px]">
+                        {/* Empty cells for previous month */}
+                        {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+                            <div key={`empty-${i}`} className="bg-white dark:bg-slate-900 p-2 min-h-[120px] opacity-50"></div>
+                        ))}
+
+                        {/* Days of current month */}
+                        {Array.from({ length: daysInMonth }).map((_, i) => {
+                            const day = i + 1;
+                            const dateTasks = getTasksForDate(day);
+                            const isToday = new Date().getDate() === day && new Date().getMonth() === currentDate.getMonth() && new Date().getFullYear() === currentDate.getFullYear();
+                            const visibleTasks = dateTasks.slice(0, MAX_VISIBLE_TASKS);
+                            const hiddenCount = dateTasks.length - MAX_VISIBLE_TASKS;
+
+                            return (
+                                <div
+                                    key={day}
+                                    className={`bg-white dark:bg-slate-900 p-2 min-h-[120px] flex flex-col gap-1 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer`}
+                                    onClick={() => {
+                                        if (dateTasks.length > 0) {
+                                            setSelectedDay({ day, tasks: dateTasks });
+                                        }
+                                    }}
+                                >
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className={`text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full ${isToday ? 'bg-indigo-600 text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                                            {day}
+                                        </span>
+                                        {dateTasks.length > 0 && (
+                                            <span className="text-[10px] font-semibold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded-full">
+                                                {dateTasks.length}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col gap-1 overflow-hidden flex-grow">
+                                        {visibleTasks.map(task => (
+                                            <div
+                                                key={task.id}
+                                                className={`text-[10px] font-medium px-2 py-1 rounded border truncate ${statusColors[task.status] || statusColors['TODO']}`}
+                                                title={task.title}
+                                            >
+                                                {task.title}
+                                            </div>
+                                        ))}
+                                        {hiddenCount > 0 && (
+                                            <div className="text-[10px] font-semibold text-indigo-500 px-2 py-0.5 text-center hover:text-indigo-700 transition-colors">
+                                                +{hiddenCount}개 더보기
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+
+                        {/* Empty cells for next month to complete the grid */}
+                        {Array.from({ length: (7 - ((firstDayOfMonth + daysInMonth) % 7)) % 7 }).map((_, i) => (
+                            <div key={`empty-end-${i}`} className="bg-white dark:bg-slate-900 p-2 min-h-[120px] opacity-50"></div>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Day Detail Popup */}
             {selectedDay && (

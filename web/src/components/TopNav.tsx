@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Monitor } from 'lucide-react';
+import { Moon, Sun, Monitor, Users } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
 import LiveSyncIndicator from '@/app/components/LiveSyncIndicator';
 import UserProfileMenu from '@/components/UserProfileMenu';
@@ -24,18 +24,6 @@ export default function TopNav() {
         setMounted(true);
     }, []);
 
-    React.useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (langRef.current && !langRef.current.contains(event.target as Node)) {
-                setLangOpen(false);
-            }
-        };
-        if (langOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [langOpen]);
-
     const cycleTheme = () => {
         if (theme === 'system') setTheme('light');
         else if (theme === 'light') setTheme('dark');
@@ -56,6 +44,15 @@ export default function TopNav() {
                 {/* Background layer detached from parent to prevent backdrop-blur rendering bugs on absolute dropdowns */}
                 <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md rounded-full border border-slate-200/50 dark:border-slate-800/50 shadow-sm pointer-events-none -z-10"></div>
 
+                {/* Real-time Presence (Mock for Monetization Demo) */}
+                <div className="flex items-center -space-x-2 mr-2" title="3 team members currently viewing">
+                    <div className="w-7 h-7 rounded-full bg-indigo-100 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[10px] font-bold text-indigo-700 shadow-sm z-30">AL</div>
+                    <div className="w-7 h-7 rounded-full bg-emerald-100 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[10px] font-bold text-emerald-700 shadow-sm z-20">KR</div>
+                    <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[10px] font-bold text-slate-500 shadow-sm z-10">+1</div>
+                </div>
+
+                <div className="w-px h-5 bg-slate-200 dark:bg-slate-700/80 mx-1"></div>
+
                 <button
                     onClick={cycleTheme}
                     title={t('changeTheme')}
@@ -70,40 +67,15 @@ export default function TopNav() {
 
                 <div className="w-px h-5 bg-slate-200 dark:bg-slate-700/80 mx-1"></div>
 
-                {/* Language Picker Dropdown */}
-                <div className="relative" ref={langRef}>
-                    <button
-                        onClick={() => setLangOpen(!langOpen)}
-                        className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-300 text-sm font-medium"
-                    >
-                        <span className="text-base leading-none">{currentLang.flag}</span>
-                        <span className="text-xs font-bold tracking-wider">{currentLang.abbr}</span>
-                    </button>
-
-                    {langOpen && (
-                        <div className="absolute right-0 top-full mt-2 w-44 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 shadow-xl rounded-xl overflow-hidden">
-                            {languages.map(lang => (
-                                <button
-                                    key={lang.code}
-                                    onClick={() => {
-                                        if (lang.code !== language) {
-                                            toggleLanguage();
-                                        }
-                                        setLangOpen(false);
-                                    }}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${lang.code === language
-                                            ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300'
-                                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                                        }`}
-                                >
-                                    <span className="text-lg">{lang.flag}</span>
-                                    <span>{lang.label}</span>
-                                    <span className="ml-auto text-xs font-bold text-slate-400">{lang.abbr}</span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                {/* Language Toggle Button */}
+                <button
+                    onClick={toggleLanguage}
+                    title={language === 'ko' ? t('languageToggle') || 'Switch to English' : t('languageToggle') || '한국어로 전환'}
+                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-300 text-sm font-medium"
+                >
+                    <span className="text-base leading-none">{currentLang.flag}</span>
+                    <span className="text-xs font-bold tracking-wider">{currentLang.abbr}</span>
+                </button>
 
                 <NotificationBell />
 

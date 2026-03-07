@@ -11,4 +11,6 @@ web/node_modules
 web/.next
 web/dist
 Dockerfile*
+out.txt
+err.txt
 # supervisord.conf  <- 주석 처리하여 제외 대상에서 제거

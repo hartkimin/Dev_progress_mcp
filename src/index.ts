@@ -15,7 +15,7 @@ import * as db from './db.js';
 const server = new Server(
     {
         name: "vibeplanner",
-        version: "1.0.0",
+        version: "1.2.0",
     },
     {
         capabilities: {
@@ -232,6 +232,29 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         }
                     },
                     required: ["projectId", "docType", "content"],
+                },
+            },
+            {
+                name: "append_project_document",
+                description: "특정 프로젝트의 Array-based 문서(ISSUE_TRACKER, CODE_REVIEW, TEST, DEPLOY 등)에 새로운 항목 하나를 추가(Append)합니다.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        projectId: {
+                            type: "string",
+                            description: "프로젝트의 ID입니다.",
+                        },
+                        docType: {
+                            type: "string",
+                            description: "문서 유형입니다.",
+                            enum: ["ISSUE_TRACKER", "CODE_REVIEW", "TEST", "DEPLOY"]
+                        },
+                        item: {
+                            type: "string",
+                            description: "추가할 단일 항목 데이터의 JSON 문자열(String) 형식입니다. (예: { \"title\": \"Bug fix\", \"status\": \"TODO\" })"
+                        }
+                    },
+                    required: ["projectId", "docType", "item"],
                 },
             },
             {
@@ -706,6 +729,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 }
                 return {
                     content: [{ type: "text", text: `Document ${docType} updated successfully.` }],
+                };
+            }
+
+            case "append_project_document": {
+                const { projectId, docType, item } = args as Record<string, string>;
+                let parsedItem: any;
+                try {
+                    parsedItem = JSON.parse(item);
+                } catch (e) {
+                    throw new McpError(ErrorCode.InvalidParams, `Invalid JSON in 'item' parameter.`);
+                }
+                const appended = await db.appendProjectDocumentItem(projectId, docType, parsedItem, "MCP Server");
+                if (!appended) {
+                    throw new McpError(ErrorCode.InternalError, "Failed to append item to project document.");
+                }
+                return {
+                    content: [{ type: "text", text: `Item appended to document ${docType} successfully.` }],
                 };
             }
 

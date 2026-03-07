@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from '@/lib/i18n';
 import { GitPullRequest, ShieldCheck, CheckCircle2, XCircle, Clock, Bot, AlertTriangle, Package, ChevronDown, ChevronUp, Eye, MessageSquare } from 'lucide-react';
+import EmptyStatePrompt from '@/components/EmptyStatePrompt';
 
 type PRStatus = 'open' | 'approved' | 'changes_requested' | 'merged';
 
@@ -135,66 +136,76 @@ export default function CodeReviewView({ projectId }: { projectId: string }) {
                 ))}
             </div>
 
-            {/* PR List */}
-            <div className="flex flex-col gap-3">
-                {prs.map(pr => {
-                    const s = STY[pr.status];
-                    const isExp = expanded === pr.id;
-                    const failed = pr.securityChecks.filter(c => !c.passed);
-                    return (
-                        <div key={pr.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                            <button onClick={() => setExpanded(isExp ? null : pr.id)} className="w-full p-4 text-left flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                <span className={`px-2 py-1 rounded-md text-xs font-bold ${s.cls}`}>#{pr.number}</span>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-medium text-slate-800 dark:text-slate-200 truncate">{pr.title}</span>
-                                        {pr.aiGenerated && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400"><Bot className="w-3 h-3" /> AI</span>}
-                                        {pr.reviewRequired && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">⚠️ {ko ? '검토' : 'Review'}</span>}
-                                        {failed.length > 0 && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400"><ShieldCheck className="w-3 h-3" /> {failed.length}</span>}
+            {/* PR List or Empty State */}
+            {prs.length === 0 ? (
+                <div className="mt-2">
+                    <EmptyStatePrompt
+                        title={ko ? "현재 등록된 PR이 없습니다" : "No Pull Requests Found"}
+                        description={ko ? "아직 코드 리뷰를 진행할 Pull Request 데이터가 없습니다. AI에게 초기 모의 PR 데이터를 생성해 달라고 요청해보세요." : "There are no pull requests to review. Ask AI to generate initial PR data."}
+                        suggestedPrompt={ko ? "사용자 인증 로직(Auth) 개발과 관련된 가상의 Pull Request 이력 3개를 만들어서 코드 리뷰 탭에 추가해줘." : "Create 3 virtual pull requests related to authentication logic development and add them to the Code Review tab."}
+                    />
+                </div>
+            ) : (
+                <div className="flex flex-col gap-3">
+                    {prs.map(pr => {
+                        const s = STY[pr.status];
+                        const isExp = expanded === pr.id;
+                        const failed = pr.securityChecks.filter(c => !c.passed);
+                        return (
+                            <div key={pr.id} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                                <button onClick={() => setExpanded(isExp ? null : pr.id)} className="w-full p-4 text-left flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                    <span className={`px-2 py-1 rounded-md text-xs font-bold ${s.cls}`}>#{pr.number}</span>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-medium text-slate-800 dark:text-slate-200 truncate">{pr.title}</span>
+                                            {pr.aiGenerated && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400"><Bot className="w-3 h-3" /> AI</span>}
+                                            {pr.reviewRequired && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">⚠️ {ko ? '검토' : 'Review'}</span>}
+                                            {failed.length > 0 && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400"><ShieldCheck className="w-3 h-3" /> {failed.length}</span>}
+                                        </div>
+                                        <div className="text-xs text-slate-500 mt-1 flex items-center gap-3">
+                                            <span>{pr.author}</span>
+                                            <span className="text-emerald-600">+{pr.additions}</span>
+                                            <span className="text-red-500">-{pr.deletions}</span>
+                                            <span className="flex items-center gap-0.5"><MessageSquare className="w-3 h-3" />{pr.comments}</span>
+                                        </div>
                                     </div>
-                                    <div className="text-xs text-slate-500 mt-1 flex items-center gap-3">
-                                        <span>{pr.author}</span>
-                                        <span className="text-emerald-600">+{pr.additions}</span>
-                                        <span className="text-red-500">-{pr.deletions}</span>
-                                        <span className="flex items-center gap-0.5"><MessageSquare className="w-3 h-3" />{pr.comments}</span>
-                                    </div>
-                                </div>
-                                {isExp ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
-                            </button>
-                            {isExp && (
-                                <div className="border-t border-slate-200 dark:border-slate-700 p-4 flex flex-col md:flex-row gap-6 bg-slate-50/50 dark:bg-slate-800/20">
-                                    <div className="flex-1">
-                                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-indigo-500" />{ko ? '보안 체크리스트' : 'Security Checklist'}</h4>
-                                        {pr.securityChecks.map((c, i) => (
-                                            <div key={i} className="flex items-center gap-2 text-sm mb-1.5">
-                                                {c.passed ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
-                                                <span className={c.passed ? 'text-slate-600 dark:text-slate-400' : 'text-red-700 dark:text-red-400 font-medium'}>{c.name}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {pr.depChanges.length > 0 && (
+                                    {isExp ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                                </button>
+                                {isExp && (
+                                    <div className="border-t border-slate-200 dark:border-slate-700 p-4 flex flex-col md:flex-row gap-6 bg-slate-50/50 dark:bg-slate-800/20">
                                         <div className="flex-1">
-                                            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5"><Package className="w-4 h-4 text-amber-500" />{ko ? '의존성 변경' : 'Dep Changes'}</h4>
-                                            {pr.depChanges.map((d, i) => (
+                                            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-indigo-500" />{ko ? '보안 체크리스트' : 'Security Checklist'}</h4>
+                                            {pr.securityChecks.map((c, i) => (
                                                 <div key={i} className="flex items-center gap-2 text-sm mb-1.5">
-                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${d.type === 'added' ? 'bg-emerald-100 text-emerald-600' : d.type === 'removed' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>{d.type === 'added' ? '+' : d.type === 'removed' ? '-' : '↑'}</span>
-                                                    <span className="font-mono text-slate-700 dark:text-slate-300">{d.name}</span>
-                                                    {d.from && <span className="text-xs text-slate-400">{d.from}→</span>}
-                                                    {d.to && <span className="text-xs text-emerald-600">{d.to}</span>}
+                                                    {c.passed ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
+                                                    <span className={c.passed ? 'text-slate-600 dark:text-slate-400' : 'text-red-700 dark:text-red-400 font-medium'}>{c.name}</span>
                                                 </div>
                                             ))}
                                         </div>
-                                    )}
-                                    <div className="min-w-[150px]">
-                                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5"><Eye className="w-4 h-4 text-blue-500" />{ko ? '리뷰어' : 'Reviewers'}</h4>
-                                        {pr.reviewers.map((r, i) => <div key={i} className="text-sm text-slate-600 dark:text-slate-400 mb-1">{r}</div>)}
+                                        {pr.depChanges.length > 0 && (
+                                            <div className="flex-1">
+                                                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5"><Package className="w-4 h-4 text-amber-500" />{ko ? '의존성 변경' : 'Dep Changes'}</h4>
+                                                {pr.depChanges.map((d, i) => (
+                                                    <div key={i} className="flex items-center gap-2 text-sm mb-1.5">
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${d.type === 'added' ? 'bg-emerald-100 text-emerald-600' : d.type === 'removed' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>{d.type === 'added' ? '+' : d.type === 'removed' ? '-' : '↑'}</span>
+                                                        <span className="font-mono text-slate-700 dark:text-slate-300">{d.name}</span>
+                                                        {d.from && <span className="text-xs text-slate-400">{d.from}→</span>}
+                                                        {d.to && <span className="text-xs text-emerald-600">{d.to}</span>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div className="min-w-[150px]">
+                                            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5"><Eye className="w-4 h-4 text-blue-500" />{ko ? '리뷰어' : 'Reviewers'}</h4>
+                                            {pr.reviewers.map((r, i) => <div key={i} className="text-sm text-slate-600 dark:text-slate-400 mb-1">{r}</div>)}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
 
             <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 text-xs text-slate-500">
                 <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />

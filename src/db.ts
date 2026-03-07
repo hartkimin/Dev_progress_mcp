@@ -176,6 +176,14 @@ export async function updateProjectDocument(projectId: string, docType: string, 
     return true;
 }
 
+export async function appendProjectDocumentItem(projectId: string, docType: string, item: any, createdBy: string = 'System'): Promise<boolean> {
+    await fetchApi(`/projects/${projectId}/documents/${docType}/append`, {
+        method: 'POST',
+        body: JSON.stringify(item)
+    });
+    return true;
+}
+
 export async function getProjectDocumentVersions(projectId: string, docType: string): Promise<ProjectDocumentVersion[]> {
     return await fetchApi(`/projects/${projectId}/documents/${docType}/versions`);
 }

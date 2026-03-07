@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from '@/lib/i18n';
 import { Bug, AlertTriangle, CheckCircle2, Search, Filter, Clock, ArrowRight, Bot, CircleDot } from 'lucide-react';
+import EmptyStatePrompt from '@/components/EmptyStatePrompt';
 
 type IssueSeverity = 'P0' | 'P1' | 'P2' | 'P3';
 type IssueStatus = 'reported' | 'analyzing' | 'fixing' | 'verifying' | 'closed';
@@ -192,79 +193,89 @@ export default function IssueTrackerView({ projectId }: { projectId: string }) {
                 )}
             </div>
 
-            {/* Issue Table */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
-                                <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 w-16">ID</th>
-                                <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">{language === 'ko' ? '제목' : 'Title'}</th>
-                                <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 w-28">{language === 'ko' ? '심각도' : 'Severity'}</th>
-                                <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 w-28">{language === 'ko' ? '상태' : 'Status'}</th>
-                                <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 w-28">{language === 'ko' ? '담당자' : 'Assignee'}</th>
-                                <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 w-32">{language === 'ko' ? '업데이트' : 'Updated'}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filtered.map((issue) => {
-                                const sev = SEVERITY_CONFIG[issue.severity];
-                                const status = STATUS_CONFIG[issue.status];
-                                return (
-                                    <tr key={issue.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                        <td className="px-4 py-3 text-slate-500 font-mono text-xs">{issue.id}</td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-2">
-                                                {TYPE_ICONS[issue.type]}
-                                                <span className="font-medium text-slate-800 dark:text-slate-200">{issue.title}</span>
-                                                {issue.aiGenerated && (
-                                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400">
-                                                        <Bot className="w-3 h-3" /> AI
-                                                    </span>
-                                                )}
-                                                {issue.reviewRequired && (
-                                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">
-                                                        <AlertTriangle className="w-3 h-3" /> {language === 'ko' ? '검토 필요' : 'Review'}
-                                                    </span>
-                                                )}
-                                                {issue.relatedPR && (
-                                                    <span className="text-xs text-indigo-500 dark:text-indigo-400 font-medium">{issue.relatedPR}</span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className={`inline-block px-2 py-1 rounded-md text-xs font-bold ${sev.color} ${sev.bg}`}>
-                                                {sev.label}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className={`inline-block px-2 py-1 rounded-md text-xs font-medium ${status.color} ${status.bg}`}>
-                                                {language === 'ko' ? status.ko : status.label}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-                                            {issue.assignee || <span className="text-slate-400 italic">{language === 'ko' ? '미배정' : 'Unassigned'}</span>}
-                                        </td>
-                                        <td className="px-4 py-3 text-slate-500 text-xs">
-                                            <div className="flex items-center gap-1">
-                                                <Clock className="w-3 h-3" />
-                                                {new Date(issue.updatedAt).toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US')}
-                                            </div>
+            {/* Issue Table or Empty State */}
+            {issues.length === 0 ? (
+                <div className="mt-2">
+                    <EmptyStatePrompt
+                        title={language === 'ko' ? "등록된 이슈가 없습니다" : "No Issues Found"}
+                        description={language === 'ko' ? "현재 프로젝트에 등록된 버그나 기능 요청 이슈가 없습니다. AI에게 초기 이슈를 스캐폴딩 하도록 요청해보세요." : "There are no bugs or feature requests for this project. Ask AI to scaffold initial issues."}
+                        suggestedPrompt={language === 'ko' ? "현재 프로젝트의 성격에 어울리는 백엔드/프론트엔드 필수 태스크 기반으로 핵심 이슈 5가지를 생성해서 이슈 트래커에 넣어줘." : "Create 5 essential backend/frontend core issues suitable for the current project and add them to the Issue Tracker."}
+                    />
+                </div>
+            ) : (
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                                    <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 w-16">ID</th>
+                                    <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">{language === 'ko' ? '제목' : 'Title'}</th>
+                                    <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 w-28">{language === 'ko' ? '심각도' : 'Severity'}</th>
+                                    <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 w-28">{language === 'ko' ? '상태' : 'Status'}</th>
+                                    <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 w-28">{language === 'ko' ? '담당자' : 'Assignee'}</th>
+                                    <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 w-32">{language === 'ko' ? '업데이트' : 'Updated'}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filtered.map((issue) => {
+                                    const sev = SEVERITY_CONFIG[issue.severity];
+                                    const status = STATUS_CONFIG[issue.status];
+                                    return (
+                                        <tr key={issue.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                            <td className="px-4 py-3 text-slate-500 font-mono text-xs">{issue.id}</td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    {TYPE_ICONS[issue.type]}
+                                                    <span className="font-medium text-slate-800 dark:text-slate-200">{issue.title}</span>
+                                                    {issue.aiGenerated && (
+                                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400">
+                                                            <Bot className="w-3 h-3" /> AI
+                                                        </span>
+                                                    )}
+                                                    {issue.reviewRequired && (
+                                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">
+                                                            <AlertTriangle className="w-3 h-3" /> {language === 'ko' ? '검토 필요' : 'Review'}
+                                                        </span>
+                                                    )}
+                                                    {issue.relatedPR && (
+                                                        <span className="text-xs text-indigo-500 dark:text-indigo-400 font-medium">{issue.relatedPR}</span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className={`inline-block px-2 py-1 rounded-md text-xs font-bold ${sev.color} ${sev.bg}`}>
+                                                    {sev.label}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className={`inline-block px-2 py-1 rounded-md text-xs font-medium ${status.color} ${status.bg}`}>
+                                                    {language === 'ko' ? status.ko : status.label}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                                                {issue.assignee || <span className="text-slate-400 italic">{language === 'ko' ? '미배정' : 'Unassigned'}</span>}
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-500 text-xs">
+                                                <div className="flex items-center gap-1">
+                                                    <Clock className="w-3 h-3" />
+                                                    {new Date(issue.updatedAt).toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US')}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {filtered.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
+                                            {language === 'ko' ? '해당 조건의 이슈가 없습니다.' : 'No issues match your filter.'}
                                         </td>
                                     </tr>
-                                );
-                            })}
-                            {filtered.length === 0 && (
-                                <tr>
-                                    <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
-                                        {language === 'ko' ? '해당 조건의 이슈가 없습니다.' : 'No issues match your filter.'}
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Data Source Notice */}
             <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 text-xs text-slate-500">

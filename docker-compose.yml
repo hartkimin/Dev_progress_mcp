@@ -1,5 +1,3 @@
-version: '3.8'
-
 name: vibeplanner
 
 services:
@@ -51,6 +49,23 @@ services:
       - NODE_ENV=production
       - PORT=8183
       - API_BASE_URL=http://api:3333/api/v1 # Route to internal API container
+
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vibeplanner-mcp
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - api
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://vibeplanner:vibeplanner_secret@postgres:5432/vibeplanner
+      - API_BASE_URL=http://api:3333/api/v1
+      - DP_API_KEY=dummy_key_for_docker
+    stdin_open: true
+    tty: true
 
 volumes:
   pgdata:
