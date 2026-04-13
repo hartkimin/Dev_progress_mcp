@@ -424,7 +424,131 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         }
                     },
                 },
-            }
+            },
+            {
+                name: "save_yc_answers",
+                description: "Save YC 6-Question answers for a project (Ideation Phase).",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        project_id: {
+                            type: "string",
+                            description: "The project ID.",
+                        },
+                        q1_demand: {
+                            type: "string",
+                            description: "Q1: What is the demand / problem being solved?",
+                        },
+                        q2_status_quo: {
+                            type: "string",
+                            description: "Q2: What is the status quo / existing solution?",
+                        },
+                        q3_specific: {
+                            type: "string",
+                            description: "Q3: What is specific and unique about this solution?",
+                        },
+                        q4_wedge: {
+                            type: "string",
+                            description: "Q4: What is the wedge / entry point?",
+                        },
+                        q5_observation: {
+                            type: "string",
+                            description: "Q5: What is the key observation or insight?",
+                        },
+                        q6_future_fit: {
+                            type: "string",
+                            description: "Q6: What is the future fit / long-term vision?",
+                        },
+                    },
+                    required: ["project_id"],
+                },
+            },
+            {
+                name: "get_yc_answers",
+                description: "Get the latest YC 6-Question answers for a project.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        project_id: {
+                            type: "string",
+                            description: "The project ID.",
+                        },
+                    },
+                    required: ["project_id"],
+                },
+            },
+            {
+                name: "save_plan_review",
+                description: "Save a Plan Review (kind: ceo/eng/design/devex). Writes DB row and MD snapshot.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        project_id: {
+                            type: "string",
+                            description: "The project ID.",
+                        },
+                        kind: {
+                            type: "string",
+                            description: "Review kind: ceo, eng, design, or devex.",
+                            enum: ["ceo", "eng", "design", "devex"],
+                        },
+                        spec_path: {
+                            type: "string",
+                            description: "Optional path to the spec file being reviewed.",
+                        },
+                        score: {
+                            type: "number",
+                            description: "Review score 0-10.",
+                        },
+                        decision: {
+                            type: "string",
+                            description: "Review decision: accept, revise, or reject.",
+                            enum: ["accept", "revise", "reject"],
+                        },
+                        payload: {
+                            type: "object",
+                            description: "Structured review payload (arbitrary JSON object).",
+                        },
+                        reviewer: {
+                            type: "string",
+                            description: "Optional reviewer name or identifier.",
+                        },
+                    },
+                    required: ["project_id", "kind", "payload"],
+                },
+            },
+            {
+                name: "list_plan_reviews",
+                description: "List Plan Reviews for a project, optionally filtered by kind.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        project_id: {
+                            type: "string",
+                            description: "The project ID.",
+                        },
+                        kind: {
+                            type: "string",
+                            description: "Optional filter by review kind (ceo/eng/design/devex).",
+                        },
+                    },
+                    required: ["project_id"],
+                },
+            },
+            {
+                name: "get_plan_review",
+                description: "Get a Plan Review by id.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        id: {
+                            type: "string",
+                            description: "The plan review ID.",
+                        },
+                    },
+                    required: ["id"],
+                },
+            },
         ],
     };
 });
@@ -897,6 +1021,50 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 return {
                     content: [{ type: "text", text: `Recent Tasks (${tasks.length}):\n${text}` }],
                 };
+            }
+
+            case "save_yc_answers": {
+                const { project_id, q1_demand, q2_status_quo, q3_specific, q4_wedge, q5_observation, q6_future_fit } = args as Record<string, any>;
+                const row = await db.saveYcAnswers(project_id, {
+                    q1Demand: q1_demand,
+                    q2StatusQuo: q2_status_quo,
+                    q3Specific: q3_specific,
+                    q4Wedge: q4_wedge,
+                    q5Observation: q5_observation,
+                    q6FutureFit: q6_future_fit,
+                });
+                return { content: [{ type: "text", text: JSON.stringify(row, null, 2) }] };
+            }
+
+            case "get_yc_answers": {
+                const { project_id } = args as Record<string, any>;
+                const row = await db.getLatestYcAnswers(project_id);
+                return { content: [{ type: "text", text: JSON.stringify(row, null, 2) }] };
+            }
+
+            case "save_plan_review": {
+                const { project_id, kind, spec_path, score, decision, payload, reviewer } = args as Record<string, any>;
+                const row = await db.savePlanReview(project_id, {
+                    kind,
+                    specPath: spec_path,
+                    score,
+                    decision,
+                    payload,
+                    reviewer,
+                });
+                return { content: [{ type: "text", text: JSON.stringify(row, null, 2) }] };
+            }
+
+            case "list_plan_reviews": {
+                const { project_id, kind } = args as Record<string, any>;
+                const rows = await db.listPlanReviews(project_id, kind);
+                return { content: [{ type: "text", text: JSON.stringify(rows, null, 2) }] };
+            }
+
+            case "get_plan_review": {
+                const { id } = args as Record<string, any>;
+                const row = await db.getPlanReview(id);
+                return { content: [{ type: "text", text: JSON.stringify(row, null, 2) }] };
             }
 
             default:
