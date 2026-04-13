@@ -34,6 +34,9 @@ services:
       - NODE_ENV=production
       - PORT=3333
       - DATABASE_URL=postgresql://vibeplanner:vibeplanner_secret@postgres:5432/vibeplanner
+      - PLAN_REVIEW_DIR=/app/data/plan-reviews/results
+    volumes:
+      - ./docs/plan-reviews/results:/app/data/plan-reviews/results
 
   web:
     build:
