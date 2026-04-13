@@ -400,3 +400,75 @@ export async function getCategoryDistribution(projectId: string): Promise<{ dist
 export async function getVelocityHistory(projectId: string, weeks: number = 8): Promise<{ weeks: number; avg_velocity: number; velocity_data: VelocityPoint[] }> {
     return await fetchApi(`/analytics/velocity?projectId=${projectId}&weeks=${weeks}`);
 }
+
+// ---------- Plan Review & YC Answers (Phase 1 gstack integration) ----------
+
+export interface YcAnswer {
+    id: string;
+    project_id: string;
+    q1_demand?: string;
+    q2_status_quo?: string;
+    q3_specific?: string;
+    q4_wedge?: string;
+    q5_observation?: string;
+    q6_future_fit?: string;
+    created_at: string;
+}
+
+export interface PlanReview {
+    id: string;
+    project_id: string;
+    kind: 'ceo' | 'eng' | 'design' | 'devex';
+    spec_path?: string;
+    md_path?: string;
+    score?: number;
+    decision?: 'accept' | 'revise' | 'reject';
+    payload: Record<string, unknown>;
+    reviewer: string;
+    created_at: string;
+}
+
+export interface YcAnswersInput {
+    q1Demand?: string;
+    q2StatusQuo?: string;
+    q3Specific?: string;
+    q4Wedge?: string;
+    q5Observation?: string;
+    q6FutureFit?: string;
+}
+
+export interface PlanReviewInput {
+    kind: 'ceo' | 'eng' | 'design' | 'devex';
+    specPath?: string;
+    score?: number;
+    decision?: 'accept' | 'revise' | 'reject';
+    payload: Record<string, unknown>;
+    reviewer?: string;
+}
+
+export async function saveYcAnswers(projectId: string, answers: YcAnswersInput): Promise<YcAnswer> {
+    return await fetchApi(`/projects/${projectId}/yc-answers`, {
+        method: 'POST',
+        body: JSON.stringify(answers),
+    });
+}
+
+export async function getLatestYcAnswers(projectId: string): Promise<YcAnswer | null> {
+    return await fetchApi(`/projects/${projectId}/yc-answers/latest`);
+}
+
+export async function savePlanReview(projectId: string, input: PlanReviewInput): Promise<PlanReview> {
+    return await fetchApi(`/projects/${projectId}/plan-reviews`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+    });
+}
+
+export async function listPlanReviews(projectId: string, kind?: string): Promise<PlanReview[]> {
+    const q = kind ? `?kind=${encodeURIComponent(kind)}` : '';
+    return await fetchApi(`/projects/${projectId}/plan-reviews${q}`);
+}
+
+export async function getPlanReview(id: string): Promise<PlanReview | null> {
+    return await fetchApi(`/plan-reviews/${id}`);
+}
