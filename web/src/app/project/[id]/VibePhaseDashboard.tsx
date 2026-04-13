@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { getPhaseBreakdown } from '@/lib/db';
 import type { PhaseBreakdownItem } from '@/lib/db';
 import { CheckCircle2, Clock, Loader2, Lightbulb, PenTool, Code2, TestTube2, Rocket } from 'lucide-react';
+import YCQuestionsCard from './planReview/YCQuestionsCard';
 
 const PHASE_CONFIG: { name: string; icon: React.ReactNode; color: string; gradient: string; emoji: string }[] = [
     { name: 'Ideation & Requirements', icon: <Lightbulb className="w-5 h-5" />, color: 'bg-indigo-500', gradient: 'from-indigo-500 to-indigo-600', emoji: '💡' },
@@ -75,8 +76,8 @@ export default function VibePhaseDashboard({ projectId }: { projectId: string })
                     const isPending = phase.total === 0 || (phase.todo === phase.total && !isActive);
 
                     return (
+                        <React.Fragment key={config.name}>
                         <div
-                            key={config.name}
                             className={`bg-white dark:bg-slate-900 rounded-2xl border shadow-sm overflow-hidden transition-all duration-300 ${isActive
                                 ? 'border-indigo-300 dark:border-indigo-600 ring-2 ring-indigo-500/20'
                                 : isComplete
@@ -146,6 +147,9 @@ export default function VibePhaseDashboard({ projectId }: { projectId: string })
                                 </div>
                             </div>
                         </div>
+                        {/* YC Questions Card — mounted after Phase 1 (Ideation & Requirements) */}
+                        {idx === 0 && <YCQuestionsCard projectId={projectId} />}
+                        </React.Fragment>
                     );
                 })}
 
