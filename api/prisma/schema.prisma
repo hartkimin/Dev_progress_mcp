@@ -108,6 +108,8 @@ model Project {
   tasks                   Task[]
   projectDocuments        ProjectDocument[]
   projectDocumentVersions ProjectDocumentVersion[]
+  planReviews             PlanReview[]
+  ycAnswers               YcAnswer[]
 
   @@map("projects")
 }
@@ -185,4 +187,39 @@ model ProjectDocumentVersion {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("project_document_versions")
+}
+
+model PlanReview {
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  kind      String   // 'ceo' | 'eng' | 'design' | 'devex'
+  specPath  String?  @map("spec_path")
+  mdPath    String?  @map("md_path")
+  score     Int?
+  decision  String?  // 'accept' | 'revise' | 'reject'
+  payload   Json
+  reviewer  String   @default("solo")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, kind, createdAt])
+  @@map("plan_reviews")
+}
+
+model YcAnswer {
+  id            String   @id @default(uuid())
+  projectId     String   @map("project_id")
+  q1Demand      String?  @map("q1_demand")
+  q2StatusQuo   String?  @map("q2_status_quo")
+  q3Specific    String?  @map("q3_specific")
+  q4Wedge       String?  @map("q4_wedge")
+  q5Observation String?  @map("q5_observation")
+  q6FutureFit   String?  @map("q6_future_fit")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("yc_answers")
 }
