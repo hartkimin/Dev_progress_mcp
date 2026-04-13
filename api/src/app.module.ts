@@ -22,6 +22,7 @@ import { BillingModule } from './billing/billing.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { HealthModule } from './health/health.module';
 import { KeysModule } from './keys/keys.module';
+import { YcAnswersModule } from './yc-answers/yc-answers.module';
 
 @Injectable()
 export class GlobalJwtAuthGuard extends JwtAuthGuard {
@@ -62,6 +63,7 @@ export class GlobalJwtAuthGuard extends JwtAuthGuard {
     NotificationsModule,
     HealthModule,
     KeysModule,
+    YcAnswersModule,
   ],
   controllers: [AppController],
   providers: [
