@@ -210,6 +210,37 @@ const translations: Translations = {
     'toolCategoryTask': { en: 'Task Management', ko: '태스크 관리' },
     'toolCategoryDocument': { en: 'Document Management', ko: '문서 관리' },
     'toolCategoryAnalytics': { en: 'Analytics & Overview', ko: '분석 & 개요' },
+
+    // Common actions (used by feature components)
+    'common.save': { en: 'Save', ko: '저장' },
+    'common.saving': { en: 'Saving...', ko: '저장 중...' },
+    'common.loading': { en: 'Loading...', ko: '로딩 중...' },
+
+    // YC 6 Questions (Ideation) — used by YCQuestionsCard
+    'yc.title': { en: 'YC 6 Questions (Ideation)', ko: 'YC 6가지 질문 (Ideation)' },
+    'yc.q1': { en: 'Demand reality: who and how many asked for this?', ko: '수요 현실: 누가, 몇 명이 이걸 요청했나?' },
+    'yc.q1.placeholder': { en: 'Specific users/teams and counts', ko: '구체적 사용자/팀명과 횟수' },
+    'yc.q2': { en: 'What is actually broken about the status quo?', ko: '현상 유지의 진짜 문제는?' },
+    'yc.q2.placeholder': { en: 'Pain points of the current way', ko: '지금 방식의 고통점' },
+    'yc.q3': { en: 'Desperate specificity', ko: '절박한 구체성' },
+    'yc.q3.placeholder': { en: 'One most specific use case', ko: '가장 구체적인 유스케이스 1개' },
+    'yc.q4': { en: 'Narrowest wedge', ko: '가장 좁은 웨지' },
+    'yc.q4.placeholder': { en: 'Minimal entry scope', ko: '최소 진입 범위' },
+    'yc.q5': { en: 'Observation', ko: '관찰' },
+    'yc.q5.placeholder': { en: 'Evidence from real usage observation', ko: '실제 사용 관찰 증거' },
+    'yc.q6': { en: 'Future-fit', ko: 'Future-fit' },
+    'yc.q6.placeholder': { en: 'Still valid in 12 months?', ko: '1년 뒤에도 유효한가?' },
+
+    // Plan Review — kind labels
+    'planReview.kind.ceo': { en: 'CEO Review', ko: 'CEO 리뷰' },
+    'planReview.kind.eng': { en: 'Engineering Review', ko: '엔지니어링 리뷰' },
+    'planReview.kind.design': { en: 'Design Review', ko: '디자인 리뷰' },
+    'planReview.kind.devex': { en: 'DevEx Review', ko: 'DevEx 리뷰' },
+
+    // Plan Review — decision labels
+    'planReview.decision.accept': { en: 'Accept', ko: '수락' },
+    'planReview.decision.revise': { en: 'Revise', ko: '수정' },
+    'planReview.decision.reject': { en: 'Reject', ko: '거절' },
 };
 
 interface I18nContextType {
