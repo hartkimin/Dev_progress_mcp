@@ -48,6 +48,8 @@ services:
     restart: unless-stopped
     depends_on:
       - api
+    env_file:
+      - ./web/.env.local
     environment:
       - NODE_ENV=production
       - PORT=8183

@@ -1,5 +1,8 @@
 import NextAuth from "next-auth";
 import GithubProvider from "next-auth/providers/github";
+import CredentialsProvider from "next-auth/providers/credentials";
+
+const isDevAuthEnabled = process.env.ENABLE_DEV_AUTH === "true";
 
 const handler = NextAuth({
   providers: [
@@ -7,6 +10,27 @@ const handler = NextAuth({
       clientId: process.env.GITHUB_ID || "",
       clientSecret: process.env.GITHUB_SECRET || "",
     }),
+    ...(isDevAuthEnabled
+      ? [
+          CredentialsProvider({
+            id: "dev",
+            name: "Dev Login (email only)",
+            credentials: {
+              email: { label: "Email", type: "email", placeholder: "dev@local" },
+              name: { label: "Name", type: "text", placeholder: "Dev User" },
+            },
+            async authorize(credentials) {
+              const email = credentials?.email?.trim();
+              if (!email) return null;
+              return {
+                id: email,
+                email,
+                name: credentials?.name?.trim() || email.split("@")[0],
+              };
+            },
+          }),
+        ]
+      : []),
   ],
   callbacks: {
     async session({ session, token }) {
