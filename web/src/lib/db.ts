@@ -269,8 +269,17 @@ export async function listUsers(): Promise<User[]> {
     return await fetchApi('/users');
 }
 
-export async function addUser(id: string, name: string, email: string): Promise<void> { }
-export async function removeUser(id: string): Promise<boolean> { return true; }
+export async function addUser(id: string, name: string, email: string): Promise<void> {
+    await fetchApi('/users', {
+        method: 'POST',
+        body: JSON.stringify({ id, name, email })
+    });
+}
+
+export async function removeUser(id: string): Promise<boolean> {
+    await fetchApi(`/users/${id}`, { method: 'DELETE' });
+    return true;
+}
 
 export async function getGlobalAnalytics(projectId?: string): Promise<GlobalAnalytics> {
     const url = projectId ? `/analytics/global?projectId=${projectId}` : `/analytics/global`;

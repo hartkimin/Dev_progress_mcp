@@ -17,54 +17,54 @@ export async function POST(req: Request) {
     tools: {
       createTask: tool({
         description: 'Create a new task in the current project',
-        parameters: z.object({
+        execute: async ({ title, status, taskType }: { title: string; status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE'; taskType?: string }) => {
+          if (!projectId) return 'Error: No project context.';
+          try {
+            await createTaskDb(projectId, title, status, 'AI Assistant', taskType || '');
+            return `Task "${title}" created successfully.`;
+          } catch (e: any) {
+            return `Error: ${e.message}`;
+          }
+        },
+        inputSchema: z.object({
           title: z.string().describe('The title of the task'),
           status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE']).describe('The status of the task'),
           taskType: z.string().optional().describe('Type of task: Docs, Coding, Prompting, etc.'),
         }),
-        execute: async ({ title, status, taskType }) => {
-          if (!projectId) return { error: 'No project context. User must be in a project page.' };
-          try {
-            const taskId = await createTaskDb(projectId, title, status, 'AI Assistant', taskType);
-            return { success: true, taskId, message: `Task "${title}" created successfully.` };
-          } catch (e: any) {
-            return { success: false, error: e.message };
-          }
-        },
       }),
       updateTaskStatus: tool({
         description: 'Update the status of an existing task. Use this when the user says they finished something.',
-        parameters: z.object({
+        execute: async ({ taskId, status }: { taskId: string; status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE' }) => {
+          try {
+            await updateTaskStatus(taskId, status, 'AI Assistant');
+            return `Task status updated to ${status}.`;
+          } catch (e: any) {
+            return `Error: ${e.message}`;
+          }
+        },
+        inputSchema: z.object({
           taskId: z.string().describe('The ID of the task to update'),
           status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE']).describe('The new status'),
         }),
-        execute: async ({ taskId, status }) => {
-          try {
-            await updateTaskStatus(taskId, status, 'AI Assistant');
-            return { success: true, message: `Task status updated to ${status}.` };
-          } catch (e: any) {
-            return { success: false, error: e.message };
-          }
-        },
       }),
       generateDocument: tool({
         description: 'Generate or update a project document (like PRD, Architecture, etc.) based on context.',
-        parameters: z.object({
+        execute: async ({ docType, content }: { docType: string; content: string }) => {
+          if (!projectId) return 'Error: No project context.';
+          try {
+            await updateProjectDocumentDb(projectId, docType, content, 'AI Assistant');
+            return `${docType} document successfully generated and saved.`;
+          } catch (e: any) {
+            return `Error: ${e.message}`;
+          }
+        },
+        inputSchema: z.object({
           docType: z.enum(['ARCHITECTURE', 'DATABASE', 'WORKFLOW', 'API', 'ENVIRONMENT', 'CHANGELOG']).describe('The type of document to update'),
           content: z.string().describe('The markdown content of the document'),
         }),
-        execute: async ({ docType, content }) => {
-          if (!projectId) return { error: 'No project context. User must be in a project page.' };
-          try {
-            await updateProjectDocumentDb(projectId, docType, content, 'AI Assistant');
-            return { success: true, message: `${docType} document successfully generated and saved.` };
-          } catch (e: any) {
-            return { success: false, error: e.message };
-          }
-        },
       }),
     },
   });
 
-  return result.toDataStreamResponse();
+  return result.toTextStreamResponse();
 }

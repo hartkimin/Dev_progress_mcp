@@ -44,14 +44,7 @@ export default function TopNav() {
                 {/* Background layer detached from parent to prevent backdrop-blur rendering bugs on absolute dropdowns */}
                 <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md rounded-full border border-slate-200/50 dark:border-slate-800/50 shadow-sm pointer-events-none -z-10"></div>
 
-                {/* Real-time Presence (Mock for Monetization Demo) */}
-                <div className="flex items-center -space-x-2 mr-2" title="3 team members currently viewing">
-                    <div className="w-7 h-7 rounded-full bg-indigo-100 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[10px] font-bold text-indigo-700 shadow-sm z-30">AL</div>
-                    <div className="w-7 h-7 rounded-full bg-emerald-100 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[10px] font-bold text-emerald-700 shadow-sm z-20">KR</div>
-                    <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[10px] font-bold text-slate-500 shadow-sm z-10">+1</div>
-                </div>
 
-                <div className="w-px h-5 bg-slate-200 dark:bg-slate-700/80 mx-1"></div>
 
                 <button
                     onClick={cycleTheme}

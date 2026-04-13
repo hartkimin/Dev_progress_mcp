@@ -18,9 +18,9 @@ export default function VibeGuidePanel({ tasks }: { tasks: Task[] }) {
     const phaseTasks = PHASES.map(p => tasks.filter(t => t.phase === p.fullName));
 
     // Intelligence: Check specific task types
-    const docTasks = tasks.filter(t => t.taskType === 'Docs');
-    const codingTasks = tasks.filter(t => t.taskType === 'Coding');
-    const promptTasks = tasks.filter(t => t.taskType === 'Prompting');
+    const docTasks = tasks.filter(t => t.task_type === 'Docs');
+    const codingTasks = tasks.filter(t => t.task_type === 'Coding');
+    const promptTasks = tasks.filter(t => t.task_type === 'Prompting');
 
     let recommendation = {
         title: "Welcome to VibePlanner!",

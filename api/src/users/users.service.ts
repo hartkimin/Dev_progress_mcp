@@ -18,9 +18,21 @@ export class UsersService {
     });
   }
 
-  async create(data: { email: string; name: string }): Promise<User> {
+  async create(data: { id?: string; email: string; name: string }): Promise<User> {
     return this.prisma.user.create({
       data,
+    });
+  }
+
+  async findAll(): Promise<User[]> {
+    return this.prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async remove(id: string): Promise<User> {
+    return this.prisma.user.delete({
+      where: { id },
     });
   }
 }

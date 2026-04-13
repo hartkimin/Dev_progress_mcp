@@ -21,6 +21,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
 import { BillingModule } from './billing/billing.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { HealthModule } from './health/health.module';
+import { KeysModule } from './keys/keys.module';
 
 @Injectable()
 export class GlobalJwtAuthGuard extends JwtAuthGuard {
@@ -60,6 +61,7 @@ export class GlobalJwtAuthGuard extends JwtAuthGuard {
     BillingModule,
     NotificationsModule,
     HealthModule,
+    KeysModule,
   ],
   controllers: [AppController],
   providers: [

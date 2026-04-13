@@ -8,6 +8,11 @@ export class UpdateTaskStatusDto {
 }
 
 export class UpdateTaskDetailsDto {
+    @ApiPropertyOptional({ description: '태스크 제목' })
+    @IsOptional()
+    @IsString()
+    title?: string;
+
     @ApiPropertyOptional({ description: '태스크 주요 설명' })
     @IsOptional()
     @IsString()

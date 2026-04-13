@@ -9,15 +9,16 @@ export default function AiSidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [modelTier, setModelTier] = useState<'free' | 'pro'>('free');
   const pathname = usePathname();
-  
+
   // Extract projectId if on a project page
   const projectIdMatch = pathname?.match(/^\/project\/([^\/]+)/);
   const projectId = projectIdMatch ? projectIdMatch[1] : undefined;
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = (useChat as any)({
     api: '/api/ai/chat',
     body: { projectId, modelTier },
   });
+
 
   return (
     <>
@@ -33,7 +34,7 @@ export default function AiSidebar() {
 
       {/* Sidebar Overlay */}
       {isOpen && (
-        <div className="fixed inset-y-0 right-0 w-80 bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 z-50 flex flex-col transform transition-transform duration-300">
+        <div className="fixed inset-y-0 right-0 w-80 bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 z-[200] flex flex-col transform transition-transform duration-300">
           <div className="flex flex-col p-4 border-b border-slate-200 dark:border-slate-800 gap-3">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
@@ -47,16 +48,16 @@ export default function AiSidebar() {
                 <X size={20} />
               </button>
             </div>
-            
+
             {/* AI Model Tiering Selector (Monetization Demo) */}
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-              <button 
+              <button
                 onClick={() => setModelTier('free')}
                 className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${modelTier === 'free' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-slate-200' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
               >
                 GPT-4o mini (Free)
               </button>
-              <button 
+              <button
                 onClick={() => setModelTier('pro')}
                 className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium py-1.5 rounded-md transition-all ${modelTier === 'pro' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
               >
@@ -71,20 +72,19 @@ export default function AiSidebar() {
                 Hi! Im your AI project assistant. Ask me to generate tasks, write specs, or give advice!
               </p>
             ) : (
-              messages.map(m => (
+              (messages as any[]).map((m: any) => (
                 <div key={m.id} className="flex flex-col gap-1">
                   {m.content && (
                     <div
-                      className={`max-w-[85%] rounded-2xl p-3 text-sm ${
-                        m.role === 'user'
+                      className={`max-w-[85%] rounded-2xl p-3 text-sm ${m.role === 'user'
                           ? 'bg-indigo-600 text-white ml-auto rounded-br-sm'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 mr-auto rounded-bl-sm'
-                      }`}
+                        }`}
                     >
                       {m.content}
                     </div>
                   )}
-                  {m.toolInvocations?.map(tool => (
+                  {m.toolInvocations?.map((tool: any) => (
                     <div key={tool.toolCallId} className="max-w-[85%] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs rounded-lg p-2 mr-auto border border-indigo-100 dark:border-indigo-800/50 flex items-center gap-1.5">
                       <Wrench size={12} />
                       <span className="font-medium">{tool.toolName}</span>

@@ -18,6 +18,10 @@ export class BillingService {
       include: { subscription: true },
     });
 
+    if (!user) {
+      throw new Error('User not found');
+    }
+
     let customerId = user.subscription?.stripeCustomerId;
 
     if (!customerId) {
@@ -63,7 +67,7 @@ export class BillingService {
 
     if (event.type === 'checkout.session.completed' || event.type === 'customer.subscription.updated') {
       const subscriptionId = session.subscription as string;
-      const stripeSubscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+      const stripeSubscription = await this.stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription;
       
       const customerId = session.customer as string;
       const userSub = await this.prisma.subscription.findFirst({
@@ -76,7 +80,7 @@ export class BillingService {
           data: {
             stripePriceId: stripeSubscription.items.data[0].price.id,
             status: stripeSubscription.status === 'active' ? 'PRO' : 'FREE',
-            currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+            currentPeriodEnd: new Date((stripeSubscription as any).current_period_end * 1000),
           },
         });
       }

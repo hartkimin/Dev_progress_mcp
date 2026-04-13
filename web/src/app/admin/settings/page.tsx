@@ -16,6 +16,7 @@ function SettingsContent() {
     useEffect(() => {
         const tab = searchParams.get('tab');
         if (tab === 'security' || tab === 'notifications' || tab === 'general') {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setActiveTab(tab as TabType);
         }
     }, [searchParams]);

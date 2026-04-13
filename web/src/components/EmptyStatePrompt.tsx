@@ -36,7 +36,7 @@ export default function EmptyStatePrompt({ title, description, suggestedPrompt }
                     {language === 'ko' ? 'AI 프롬프트 제안' : 'AI Prompt Suggestion'}
                 </div>
                 <p className="text-sm text-slate-700 dark:text-slate-300 font-medium whitespace-pre-wrap mt-2 pr-12 leading-relaxed font-mono">
-                    "{suggestedPrompt}"
+                    &quot;{suggestedPrompt}&quot;
                 </p>
                 <div className="absolute top-0 right-0 h-full flex flex-col justify-center px-4">
                     <button
