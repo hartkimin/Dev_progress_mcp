@@ -75,8 +75,8 @@ export default function VibePhaseDashboard({ projectId }: { projectId: string })
                     const isPending = phase.total === 0 || (phase.todo === phase.total && !isActive);
 
                     return (
+                        <React.Fragment key={config.name}>
                         <div
-                            key={config.name}
                             className={`bg-white dark:bg-slate-900 rounded-2xl border shadow-sm overflow-hidden transition-all duration-300 ${isActive
                                 ? 'border-indigo-300 dark:border-indigo-600 ring-2 ring-indigo-500/20'
                                 : isComplete
@@ -146,6 +146,7 @@ export default function VibePhaseDashboard({ projectId }: { projectId: string })
                                 </div>
                             </div>
                         </div>
+                        </React.Fragment>
                     );
                 })}
 

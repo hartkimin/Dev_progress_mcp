@@ -48,6 +48,18 @@ const translations: Translations = {
     'catDevelopment': { en: 'Development', ko: '개발' },
     'catAi': { en: 'AI Management', ko: 'AI 관리' },
 
+    // Phase-centric Nav Groups
+    'navGroupOverview':   { en: 'Overview',  ko: '개요' },
+    'navGroupIdeation':   { en: 'Ideation',  ko: '기획' },
+    'navGroupDesign':     { en: 'Design',    ko: '설계' },
+    'navGroupBuild':      { en: 'Build',     ko: '개발' },
+    'navGroupQa':         { en: 'QA',        ko: '품질' },
+    'navGroupDeploy':     { en: 'Deploy',    ko: '배포' },
+
+    // Ideation Phase Tabs
+    'tabYcQuestions':     { en: 'YC Questions', ko: 'YC 질문' },
+    'tabPlanReviewHub':   { en: 'Plan Reviews', ko: 'Plan Review' },
+
     // Calendar
     'calToday': { en: 'Today', ko: '오늘' },
     'calMoreItems': { en: 'more', ko: '개 더보기' },
@@ -206,10 +218,56 @@ const translations: Translations = {
     'toolUpdateProject': { en: 'Update project name or description.', ko: '프로젝트 이름이나 설명을 수정합니다.' },
     'toolGetAnalytics': { en: 'Retrieve project & task analytics.', ko: '프로젝트 및 태스크 통계를 조회합니다.' },
     'toolGetRecentTasks': { en: 'Fetch recently updated tasks.', ko: '최근 업데이트된 태스크를 조회합니다.' },
+    'toolAppendProjectDocument': { en: 'Atomically append one item to an array document (ISSUE_TRACKER, CODE_REVIEW, TEST, DEPLOY).', ko: 'Array 기반 문서(ISSUE_TRACKER, CODE_REVIEW, TEST, DEPLOY)에 항목 1개를 원자적으로 추가합니다.' },
+    'toolSaveYcAnswers': { en: 'Save YC 6-Question answers for the Ideation phase.', ko: 'Ideation 단계의 YC 6가지 질문 응답을 저장합니다.' },
+    'toolGetYcAnswers': { en: 'Get the latest YC 6-Question answers for a project.', ko: '프로젝트의 최신 YC 6가지 질문 응답을 조회합니다.' },
+    'toolSavePlanReview': { en: 'Save a Plan Review (kind: ceo/eng/design/devex). Writes DB row + MD snapshot.', ko: 'Plan Review를 저장합니다 (kind: ceo/eng/design/devex). DB 행 + MD 스냅샷이 함께 작성됩니다.' },
+    'toolListPlanReviews': { en: 'List Plan Reviews for a project, optionally filtered by kind.', ko: '프로젝트의 Plan Review 목록을 조회합니다 (kind 필터 지원).' },
+    'toolGetPlanReview': { en: 'Get a Plan Review by id.', ko: 'ID로 Plan Review를 단건 조회합니다.' },
     'toolCategoryProject': { en: 'Project Management', ko: '프로젝트 관리' },
     'toolCategoryTask': { en: 'Task Management', ko: '태스크 관리' },
     'toolCategoryDocument': { en: 'Document Management', ko: '문서 관리' },
     'toolCategoryAnalytics': { en: 'Analytics & Overview', ko: '분석 & 개요' },
+    'toolCategoryPlanReview': { en: 'Plan Review (gstack)', ko: 'Plan Review (gstack)' },
+
+    // Common actions (used by feature components)
+    'common.save': { en: 'Save', ko: '저장' },
+    'common.saving': { en: 'Saving...', ko: '저장 중...' },
+    'common.loading': { en: 'Loading...', ko: '로딩 중...' },
+
+    // YC 6 Questions (Ideation) — used by YCQuestionsCard
+    'yc.title': { en: 'YC 6 Questions (Ideation)', ko: 'YC 6가지 질문 (Ideation)' },
+    'yc.q1': { en: 'Demand reality: who and how many asked for this?', ko: '수요 현실: 누가, 몇 명이 이걸 요청했나?' },
+    'yc.q1.placeholder': { en: 'Specific users/teams and counts', ko: '구체적 사용자/팀명과 횟수' },
+    'yc.q2': { en: 'What is actually broken about the status quo?', ko: '현상 유지의 진짜 문제는?' },
+    'yc.q2.placeholder': { en: 'Pain points of the current way', ko: '지금 방식의 고통점' },
+    'yc.q3': { en: 'Desperate specificity', ko: '절박한 구체성' },
+    'yc.q3.placeholder': { en: 'One most specific use case', ko: '가장 구체적인 유스케이스 1개' },
+    'yc.q4': { en: 'Narrowest wedge', ko: '가장 좁은 웨지' },
+    'yc.q4.placeholder': { en: 'Minimal entry scope', ko: '최소 진입 범위' },
+    'yc.q5': { en: 'Observation', ko: '관찰' },
+    'yc.q5.placeholder': { en: 'Evidence from real usage observation', ko: '실제 사용 관찰 증거' },
+    'yc.q6': { en: 'Future-fit', ko: 'Future-fit' },
+    'yc.q6.placeholder': { en: 'Still valid in 12 months?', ko: '1년 뒤에도 유효한가?' },
+
+    // Plan Review — kind labels
+    'planReview.kind.ceo': { en: 'CEO Review', ko: 'CEO 리뷰' },
+    'planReview.kind.eng': { en: 'Engineering Review', ko: '엔지니어링 리뷰' },
+    'planReview.kind.design': { en: 'Design Review', ko: '디자인 리뷰' },
+    'planReview.kind.devex': { en: 'DevEx Review', ko: 'DevEx 리뷰' },
+
+    // Plan Review — decision labels
+    'planReview.decision.accept': { en: 'Accept', ko: '수락' },
+    'planReview.decision.revise': { en: 'Revise', ko: '수정' },
+    'planReview.decision.reject': { en: 'Reject', ko: '거절' },
+
+    // Strategy Readiness (Overview dashboard widgets)
+    'strategyReadinessTitle':    { en: 'Strategy Readiness',   ko: '전략 준비도' },
+    'ycCompletionLabel':         { en: 'YC completion',        ko: 'YC 완료율' },
+    'planReviewAvgLabel':        { en: 'Plan review avg',      ko: 'Plan Review 평균' },
+    'ycMissingTop3Title':        { en: 'Top 3 projects missing YC answers', ko: 'YC 미응답 Top 3' },
+    'recentPlanReviewsTitle':    { en: 'Recent Plan Reviews',  ko: '최근 Plan Review' },
+    'startIdeationCta':          { en: 'Start Ideation',       ko: 'Ideation 시작하기' },
 };
 
 interface I18nContextType {

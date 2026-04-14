@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useTransition, useState } from 'react';
 import ProjectActions from './ProjectActions';
 import { useTranslation } from '@/lib/i18n';
-import type { ProjectSummary } from '@/lib/db';
+import type { ProjectSummary, StrategyReadiness } from '@/lib/db';
+import StrategyReadinessSection from './StrategyReadiness';
+import PhaseProgressStrip from './PhaseProgressStrip';
 import { createProjectAction } from '@/app/actions';
 import { AlertTriangle, TrendingUp, Clock } from 'lucide-react';
 
@@ -282,6 +284,12 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
                         </div>
                     )}
 
+                    {project.phase_progress && project.phase_progress.length > 0 && (
+                        <div className="mb-4">
+                            <PhaseProgressStrip phases={project.phase_progress} />
+                        </div>
+                    )}
+
                     {/* Footer: Phase & Activity */}
                     <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 group-hover:border-indigo-200 dark:group-hover:border-indigo-500/20 transition-colors">
                         <div className="flex flex-col gap-1 min-w-0">
@@ -307,7 +315,7 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
     );
 }
 
-export default function DashboardContent({ projectSummaries }: { projectSummaries: ProjectSummary[] }) {
+export default function DashboardContent({ projectSummaries, strategyReadiness }: { projectSummaries: ProjectSummary[]; strategyReadiness?: StrategyReadiness | null }) {
     const { t } = useTranslation();
 
     return (
@@ -325,6 +333,8 @@ export default function DashboardContent({ projectSummaries }: { projectSummarie
 
             <section>
                 <VibeAlertPanel projects={projectSummaries} />
+
+                <StrategyReadinessSection data={strategyReadiness ?? null} />
 
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
                     <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">

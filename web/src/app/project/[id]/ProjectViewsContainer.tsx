@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Task } from '@/lib/db';
 import KanbanBoardClient from './KanbanBoardClient';
 import CalendarViewClient from './CalendarViewClient';
@@ -14,20 +15,25 @@ import DeploymentView from './DeploymentView';
 import AIContextView from './AIContextView';
 import VibePhaseDashboard from './VibePhaseDashboard';
 import { useTranslation } from '@/lib/i18n';
+import YCQuestionsView from './planReview/YCQuestionsView';
+import PlanReviewHub from './planReview/PlanReviewHub';
+import PlanReviewBadges from './planReview/PlanReviewBadges';
 import {
     LayoutDashboard, Calendar, Bug, BarChart3,
     Box, Database, FileJson,
     GitPullRequest, TestTube2, Server, Rocket,
-    Brain, Lightbulb, FileText, Workflow
+    Brain, Lightbulb, FileText, Workflow,
+    Sparkles, ClipboardList,
 } from 'lucide-react';
 
 type ViewType =
     | 'kanban' | 'calendar' | 'issue_tracker' | 'kpi' | 'phase_tracker'
+    | 'yc_questions' | 'plan_review_hub'
     | 'architecture' | 'database' | 'api_spec'
     | 'code_review' | 'test' | 'environment' | 'deploy'
     | 'ai_context' | 'decision' | 'changelog';
 
-type CategoryKey = 'project' | 'design' | 'development' | 'ai';
+type CategoryKey = 'overview' | 'ideation' | 'design' | 'build' | 'qa' | 'deploy';
 
 interface CategoryConfig {
     key: CategoryKey;
@@ -37,10 +43,12 @@ interface CategoryConfig {
 }
 
 const CATEGORIES: CategoryConfig[] = [
-    { key: 'project', emoji: '📋', activeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shadow-[inset_0_-2px_0_0_#6366f1]', hoverBg: 'hover:text-indigo-500 dark:hover:text-indigo-400' },
-    { key: 'design', emoji: '🏗️', activeColor: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-[inset_0_-2px_0_0_#10b981]', hoverBg: 'hover:text-emerald-500 dark:hover:text-emerald-400' },
-    { key: 'development', emoji: '🔌', activeColor: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 shadow-[inset_0_-2px_0_0_#f59e0b]', hoverBg: 'hover:text-amber-500 dark:hover:text-amber-400' },
-    { key: 'ai', emoji: '🤖', activeColor: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 shadow-[inset_0_-2px_0_0_#8b5cf6]', hoverBg: 'hover:text-violet-500 dark:hover:text-violet-400' },
+    { key: 'overview', emoji: '🏠', activeColor: 'bg-slate-500/10 text-slate-700 dark:text-slate-200 shadow-[inset_0_-2px_0_0_#64748b]',  hoverBg: 'hover:text-slate-700 dark:hover:text-slate-200' },
+    { key: 'ideation', emoji: '💡', activeColor: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 shadow-[inset_0_-2px_0_0_#f59e0b]',  hoverBg: 'hover:text-amber-500 dark:hover:text-amber-400' },
+    { key: 'design',   emoji: '🏗️', activeColor: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-[inset_0_-2px_0_0_#10b981]', hoverBg: 'hover:text-emerald-500 dark:hover:text-emerald-400' },
+    { key: 'build',    emoji: '🔨', activeColor: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shadow-[inset_0_-2px_0_0_#6366f1]',  hoverBg: 'hover:text-indigo-500 dark:hover:text-indigo-400' },
+    { key: 'qa',       emoji: '🧪', activeColor: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-[inset_0_-2px_0_0_#f43f5e]',       hoverBg: 'hover:text-rose-500 dark:hover:text-rose-400' },
+    { key: 'deploy',   emoji: '🚀', activeColor: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 shadow-[inset_0_-2px_0_0_#8b5cf6]', hoverBg: 'hover:text-violet-500 dark:hover:text-violet-400' },
 ];
 
 export default function ProjectViewsContainer({
@@ -54,33 +62,49 @@ export default function ProjectViewsContainer({
     projectId: string,
     projectName: string
 }) {
-    const [view, setView] = useState<ViewType>('kanban');
+    const searchParams = useSearchParams();
+    const VALID_VIEWS: ReadonlyArray<ViewType> = [
+        'kanban', 'calendar', 'issue_tracker', 'kpi', 'phase_tracker',
+        'yc_questions', 'plan_review_hub',
+        'architecture', 'database', 'api_spec',
+        'code_review', 'test', 'environment', 'deploy',
+        'ai_context', 'decision', 'changelog',
+    ];
+    const urlView = searchParams.get('view');
+    const initialView: ViewType = (urlView && VALID_VIEWS.includes(urlView as ViewType))
+        ? (urlView as ViewType)
+        : 'kanban';
+    const [view, setView] = useState<ViewType>(initialView);
     const { t } = useTranslation();
 
     const tabs: { key: ViewType; label: string; icon: React.ReactNode; category: CategoryKey }[] = [
-        // 📋 프로젝트 (What)
-        { key: 'kanban', label: t('tabKanban'), icon: <LayoutDashboard className="w-4 h-4" />, category: 'project' },
-        { key: 'calendar', label: t('tabCalendar'), icon: <Calendar className="w-4 h-4" />, category: 'project' },
-        { key: 'issue_tracker', label: t('tabIssueTracker'), icon: <Bug className="w-4 h-4" />, category: 'project' },
-        { key: 'kpi', label: 'KPI', icon: <BarChart3 className="w-4 h-4" />, category: 'project' },
-        { key: 'phase_tracker', label: 'Phases', icon: <Workflow className="w-4 h-4" />, category: 'project' },
-        // 🏗️ 설계 (How)
-        { key: 'architecture', label: t('tabArchitecture'), icon: <Box className="w-4 h-4" />, category: 'design' },
-        { key: 'database', label: t('tabDatabase'), icon: <Database className="w-4 h-4" />, category: 'design' },
-        { key: 'api_spec', label: t('tabApiSpec'), icon: <FileJson className="w-4 h-4" />, category: 'design' },
-        // 🔌 개발 (Build)
-        { key: 'code_review', label: t('tabCodeReview'), icon: <GitPullRequest className="w-4 h-4" />, category: 'development' },
-        { key: 'test', label: t('tabTest'), icon: <TestTube2 className="w-4 h-4" />, category: 'development' },
-        { key: 'environment', label: t('tabEnvironment'), icon: <Server className="w-4 h-4" />, category: 'development' },
-        { key: 'deploy', label: t('tabDeploy'), icon: <Rocket className="w-4 h-4" />, category: 'development' },
-        // 🤖 AI 관리
-        { key: 'ai_context', label: t('tabAIContext'), icon: <Brain className="w-4 h-4" />, category: 'ai' },
-        { key: 'decision', label: t('tabDecision'), icon: <Lightbulb className="w-4 h-4" />, category: 'ai' },
-        { key: 'changelog', label: t('tabChangelog'), icon: <FileText className="w-4 h-4" />, category: 'ai' },
+        // 🏠 Overview (cross-cutting)
+        { key: 'kanban',        label: t('tabKanban'),       icon: <LayoutDashboard className="w-4 h-4" />, category: 'overview' },
+        { key: 'calendar',      label: t('tabCalendar'),     icon: <Calendar className="w-4 h-4" />,        category: 'overview' },
+        { key: 'kpi',           label: 'KPI',                icon: <BarChart3 className="w-4 h-4" />,       category: 'overview' },
+        { key: 'phase_tracker', label: 'Phases',             icon: <Workflow className="w-4 h-4" />,        category: 'overview' },
+        { key: 'ai_context',    label: t('tabAIContext'),    icon: <Brain className="w-4 h-4" />,           category: 'overview' },
+        { key: 'decision',      label: t('tabDecision'),     icon: <Lightbulb className="w-4 h-4" />,       category: 'overview' },
+        // 💡 Ideation
+        { key: 'yc_questions',    label: t('tabYcQuestions'),   icon: <Sparkles className="w-4 h-4" />,      category: 'ideation' },
+        { key: 'plan_review_hub', label: t('tabPlanReviewHub'), icon: <ClipboardList className="w-4 h-4" />, category: 'ideation' },
+        // 🏗️ Design
+        { key: 'architecture',  label: t('tabArchitecture'), icon: <Box className="w-4 h-4" />,             category: 'design' },
+        { key: 'database',      label: t('tabDatabase'),     icon: <Database className="w-4 h-4" />,        category: 'design' },
+        { key: 'api_spec',      label: t('tabApiSpec'),      icon: <FileJson className="w-4 h-4" />,        category: 'design' },
+        // 🔨 Build
+        { key: 'code_review',   label: t('tabCodeReview'),   icon: <GitPullRequest className="w-4 h-4" />,  category: 'build' },
+        { key: 'environment',   label: t('tabEnvironment'),  icon: <Server className="w-4 h-4" />,          category: 'build' },
+        // 🧪 QA
+        { key: 'test',          label: t('tabTest'),         icon: <TestTube2 className="w-4 h-4" />,       category: 'qa' },
+        { key: 'issue_tracker', label: t('tabIssueTracker'), icon: <Bug className="w-4 h-4" />,             category: 'qa' },
+        // 🚀 Deploy
+        { key: 'deploy',        label: t('tabDeploy'),       icon: <Rocket className="w-4 h-4" />,          category: 'deploy' },
+        { key: 'changelog',     label: t('tabChangelog'),    icon: <FileText className="w-4 h-4" />,        category: 'deploy' },
     ];
 
     const getCategoryConfig = (catKey: CategoryKey) => CATEGORIES.find(c => c.key === catKey)!;
-    const activeCategory = tabs.find(tab => tab.key === view)?.category || 'project';
+    const activeCategory = tabs.find(tab => tab.key === view)?.category || 'overview';
 
     const renderTab = (tab: typeof tabs[0]) => {
         const cat = getCategoryConfig(tab.category);
@@ -109,7 +133,7 @@ export default function ProjectViewsContainer({
                         return (
                             <React.Fragment key={cat.key}>
                                 {catIdx > 0 && <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 shrink-0"></div>}
-                                <span className="text-xs px-1 shrink-0 select-none" title={t(`cat${cat.key.charAt(0).toUpperCase() + cat.key.slice(1)}`)}>
+                                <span className="text-xs px-1 shrink-0 select-none" title={t(`navGroup${cat.key.charAt(0).toUpperCase() + cat.key.slice(1)}`)}>
                                     {cat.emoji}
                                 </span>
                                 {catTabs.map(renderTab)}
@@ -118,6 +142,17 @@ export default function ProjectViewsContainer({
                     })}
                 </div>
             </div>
+
+            {/* Plan review badge strip — shown above the active view for relevant phases */}
+            {activeCategory === 'ideation' && (
+                <PlanReviewBadges projectId={projectId} kinds={['ceo', 'design']} />
+            )}
+            {activeCategory === 'design' && (
+                <PlanReviewBadges projectId={projectId} kinds={['eng', 'design']} />
+            )}
+            {activeCategory === 'deploy' && (
+                <PlanReviewBadges projectId={projectId} kinds={['devex']} />
+            )}
 
             {/* 📋 프로젝트 */}
             {view === 'kanban' && (
@@ -134,6 +169,14 @@ export default function ProjectViewsContainer({
             )}
             {view === 'phase_tracker' && (
                 <VibePhaseDashboard projectId={projectId} />
+            )}
+
+            {/* 💡 Ideation */}
+            {view === 'yc_questions' && (
+                <YCQuestionsView projectId={projectId} />
+            )}
+            {view === 'plan_review_hub' && (
+                <PlanReviewHub projectId={projectId} />
             )}
 
             {/* 🏗️ 설계 */}

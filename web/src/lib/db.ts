@@ -8,12 +8,13 @@ export function setAccessToken(token: string | null) {
 }
 
 function toSnake(obj: any): any {
+    if (obj instanceof Date) return obj;
     if (Array.isArray(obj)) return obj.map(toSnake);
     if (obj !== null && typeof obj === 'object') {
         const out: any = {};
         for (const k in obj) {
             const snakeKey = k.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-            out[snakeKey] = obj[k];
+            out[snakeKey] = toSnake(obj[k]);
         }
         if (out._count && out._count.comments !== undefined) {
             out.comment_count = out._count.comments;
@@ -24,14 +25,32 @@ function toSnake(obj: any): any {
     return obj;
 }
 
+async function resolveServerAccessToken(): Promise<string | null> {
+    try {
+        const [{ getServerSession }, { authOptions }] = await Promise.all([
+            import('next-auth/next'),
+            import('./authOptions'),
+        ]);
+        const session = await getServerSession(authOptions);
+        return (session as any)?.accessToken ?? null;
+    } catch {
+        return null;
+    }
+}
+
 async function fetchApi(path: string, options?: RequestInit) {
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         ...(options?.headers as Record<string, string> || {})
     };
 
-    if (globalAccessToken) {
-        headers['Authorization'] = `Bearer ${globalAccessToken}`;
+    let token = globalAccessToken;
+    if (!token && typeof window === 'undefined') {
+        token = await resolveServerAccessToken();
+    }
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
     }
 
     const res = await fetch(`${API_BASE_URL}${path}`, {
@@ -330,6 +349,12 @@ export async function restoreProjectDocumentVersionDb(projectId: string, docType
 
 // ─── Analytics API ───────────────────────────────────────────────
 
+export interface PhaseProgress {
+    phase: string;
+    total: number;
+    done: number;
+}
+
 export interface ProjectSummary {
     id: string;
     name: string;
@@ -345,6 +370,7 @@ export interface ProjectSummary {
         dominant_phase: string;
         last_activity: string | null;
     };
+    phase_progress?: PhaseProgress[];
 }
 
 export interface PhaseBreakdownItem {
@@ -399,4 +425,97 @@ export async function getCategoryDistribution(projectId: string): Promise<{ dist
 
 export async function getVelocityHistory(projectId: string, weeks: number = 8): Promise<{ weeks: number; avg_velocity: number; velocity_data: VelocityPoint[] }> {
     return await fetchApi(`/analytics/velocity?projectId=${projectId}&weeks=${weeks}`);
+}
+
+// ---------- Plan Review & YC Answers (Phase 1 gstack integration) ----------
+
+export interface YcAnswer {
+    id: string;
+    project_id: string;
+    q1_demand?: string;
+    q2_status_quo?: string;
+    q3_specific?: string;
+    q4_wedge?: string;
+    q5_observation?: string;
+    q6_future_fit?: string;
+    created_at: string;
+}
+
+export interface PlanReview {
+    id: string;
+    project_id: string;
+    kind: 'ceo' | 'eng' | 'design' | 'devex';
+    spec_path?: string;
+    md_path?: string;
+    score?: number;
+    decision?: 'accept' | 'revise' | 'reject';
+    payload: Record<string, unknown>;
+    reviewer: string;
+    created_at: string;
+}
+
+export interface YcAnswersInput {
+    q1Demand?: string;
+    q2StatusQuo?: string;
+    q3Specific?: string;
+    q4Wedge?: string;
+    q5Observation?: string;
+    q6FutureFit?: string;
+}
+
+export interface PlanReviewInput {
+    kind: 'ceo' | 'eng' | 'design' | 'devex';
+    specPath?: string;
+    score?: number;
+    decision?: 'accept' | 'revise' | 'reject';
+    payload: Record<string, unknown>;
+    reviewer?: string;
+}
+
+export async function saveYcAnswers(projectId: string, answers: YcAnswersInput): Promise<YcAnswer> {
+    return await fetchApi(`/projects/${projectId}/yc-answers`, {
+        method: 'POST',
+        body: JSON.stringify(answers),
+    });
+}
+
+export async function getLatestYcAnswers(projectId: string): Promise<YcAnswer | null> {
+    return await fetchApi(`/projects/${projectId}/yc-answers/latest`);
+}
+
+export async function savePlanReview(projectId: string, input: PlanReviewInput): Promise<PlanReview> {
+    return await fetchApi(`/projects/${projectId}/plan-reviews`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+    });
+}
+
+export async function listPlanReviews(projectId: string, kind?: string): Promise<PlanReview[]> {
+    const q = kind ? `?kind=${encodeURIComponent(kind)}` : '';
+    return await fetchApi(`/projects/${projectId}/plan-reviews${q}`);
+}
+
+export async function getPlanReview(id: string): Promise<PlanReview | null> {
+    return await fetchApi(`/plan-reviews/${id}`);
+}
+
+export interface StrategyReadinessProject {
+    id: string;
+    name: string;
+    yc_completion_rate: number;
+    plan_review_avg_score: number | null;
+    plan_review_count_by_kind: { ceo: number; eng: number; design: number; devex: number };
+    phase_progress: PhaseProgress[];
+}
+
+export interface StrategyReadiness {
+    projects: StrategyReadinessProject[];
+    aggregate: {
+        yc_completion_rate: number;
+        plan_review_avg_score: number | null;
+    };
+}
+
+export async function getStrategyReadiness(): Promise<StrategyReadiness> {
+    return await fetchApi('/analytics/strategy-readiness');
 }
