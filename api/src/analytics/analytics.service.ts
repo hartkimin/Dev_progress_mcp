@@ -318,8 +318,15 @@ export class AnalyticsService {
     }
 
     // ─── NEW: All project summaries (for dashboard cards) ────────
-    async getAllProjectSummaries() {
+    async getAllProjectSummaries(userId: string) {
         const projects = await this.prisma.project.findMany({
+            where: {
+                workspace: {
+                    members: {
+                        some: { userId },
+                    },
+                },
+            },
             include: {
                 tasks: {
                     select: {

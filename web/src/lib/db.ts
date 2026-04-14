@@ -24,14 +24,32 @@ function toSnake(obj: any): any {
     return obj;
 }
 
+async function resolveServerAccessToken(): Promise<string | null> {
+    try {
+        const [{ getServerSession }, { authOptions }] = await Promise.all([
+            import('next-auth/next'),
+            import('./authOptions'),
+        ]);
+        const session = await getServerSession(authOptions);
+        return (session as any)?.accessToken ?? null;
+    } catch {
+        return null;
+    }
+}
+
 async function fetchApi(path: string, options?: RequestInit) {
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         ...(options?.headers as Record<string, string> || {})
     };
 
-    if (globalAccessToken) {
-        headers['Authorization'] = `Bearer ${globalAccessToken}`;
+    let token = globalAccessToken;
+    if (!token && typeof window === 'undefined') {
+        token = await resolveServerAccessToken();
+    }
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
     }
 
     const res = await fetch(`${API_BASE_URL}${path}`, {

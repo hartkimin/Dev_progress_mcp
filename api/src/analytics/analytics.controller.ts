@@ -1,6 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { GetUser } from '../auth/get-user.decorator';
 
 @ApiTags('analytics')
 @Controller('analytics')
@@ -29,9 +30,9 @@ export class AnalyticsController {
     }
 
     @Get('project-summaries')
-    @ApiOperation({ summary: '전체 프로젝트 요약 목록 (대시보드 카드용)' })
-    getAllProjectSummaries() {
-        return this.analyticsService.getAllProjectSummaries();
+    @ApiOperation({ summary: '현재 사용자가 접근 가능한 프로젝트 요약 목록 (대시보드 카드용)' })
+    getAllProjectSummaries(@GetUser('id') userId: string) {
+        return this.analyticsService.getAllProjectSummaries(userId);
     }
 
     @Get('phase-breakdown')
