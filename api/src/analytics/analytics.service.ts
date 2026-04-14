@@ -1,6 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+const VIBE_PHASES = [
+    'Ideation & Requirements',
+    'Architecture & Design',
+    'Implementation',
+    'Testing & QA',
+    'Deployment & Review',
+] as const;
+
 @Injectable()
 export class AnalyticsService {
     constructor(private prisma: PrismaService) { }
@@ -112,14 +120,6 @@ export class AnalyticsService {
 
     // ─── NEW: Phase Breakdown (Vibe Coding 5 Phases) ─────────────
     async getPhaseBreakdown(projectId: string) {
-        const VIBE_PHASES = [
-            'Ideation & Requirements',
-            'Architecture & Design',
-            'Implementation',
-            'Testing & QA',
-            'Deployment & Review',
-        ];
-
         const tasks = await this.prisma.task.findMany({
             where: { projectId },
             select: {
@@ -150,7 +150,7 @@ export class AnalyticsService {
                 : null;
 
             return {
-                name: phaseName,
+                name: phaseName as string,
                 total,
                 todo,
                 inProgress,
@@ -162,7 +162,7 @@ export class AnalyticsService {
         });
 
         // Unassigned tasks
-        const unassigned = tasks.filter(t => !t.phase || !VIBE_PHASES.includes(t.phase));
+        const unassigned = tasks.filter(t => !t.phase || !(VIBE_PHASES as readonly string[]).includes(t.phase));
         if (unassigned.length > 0) {
             phases.push({
                 name: 'Unassigned',
@@ -314,6 +314,84 @@ export class AnalyticsService {
             weeks,
             avgVelocity,
             velocityData,
+        };
+    }
+
+    // ─── NEW: Strategy Readiness (cross-project dashboard) ───────
+    async getStrategyReadiness(userId: string) {
+        const KINDS = ['ceo', 'eng', 'design', 'devex'] as const;
+        const YC_FIELDS = ['q1Demand', 'q2StatusQuo', 'q3Specific', 'q4Wedge', 'q5Observation', 'q6FutureFit'] as const;
+
+        const projects = await this.prisma.project.findMany({
+            where: {
+                workspace: { members: { some: { userId } } },
+            },
+            include: {
+                tasks: { select: { status: true, phase: true } },
+                ycAnswers: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                },
+                planReviews: { select: { kind: true, score: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        const projectRows = projects.map((project) => {
+            const latestYc = project.ycAnswers[0];
+            const answered = latestYc
+                ? YC_FIELDS.filter((f) => ((latestYc as any)[f] ?? '').toString().trim().length > 0).length
+                : 0;
+            const ycCompletionRate = answered / YC_FIELDS.length;
+
+            const reviewScores = project.planReviews
+                .map((r) => r.score)
+                .filter((s): s is number => typeof s === 'number');
+            const planReviewAvgScore = reviewScores.length
+                ? reviewScores.reduce((a, b) => a + b, 0) / reviewScores.length
+                : null;
+
+            const planReviewCountByKind = KINDS.reduce<Record<string, number>>((acc, k) => {
+                acc[k] = project.planReviews.filter((r) => r.kind === k).length;
+                return acc;
+            }, {});
+
+            const phaseProgress = VIBE_PHASES.map((phase) => {
+                const phaseTasks = project.tasks.filter((t) => t.phase === phase);
+                return {
+                    phase,
+                    total: phaseTasks.length,
+                    done: phaseTasks.filter((t) => t.status === 'DONE').length,
+                };
+            });
+
+            return {
+                id: project.id,
+                name: project.name,
+                ycCompletionRate,
+                planReviewAvgScore,
+                planReviewCountByKind,
+                phaseProgress,
+            };
+        });
+
+        const aggYc =
+            projectRows.length > 0
+                ? projectRows.reduce((a, r) => a + r.ycCompletionRate, 0) / projectRows.length
+                : 0;
+        const scoresAll = projectRows
+            .map((r) => r.planReviewAvgScore)
+            .filter((s): s is number => s != null);
+        const aggScore = scoresAll.length
+            ? scoresAll.reduce((a, b) => a + b, 0) / scoresAll.length
+            : null;
+
+        return {
+            projects: projectRows,
+            aggregate: {
+                ycCompletionRate: aggYc,
+                planReviewAvgScore: aggScore,
+            },
         };
     }
 
