@@ -7,7 +7,10 @@
 import { useEffect, useState } from 'react';
 import { listPlanReviews } from '@/app/actions/planReviewActions';
 
-interface Props { projectId: string; }
+interface Props {
+    projectId: string;
+    kindFilter?: 'ceo' | 'eng' | 'design' | 'devex';
+}
 
 interface Row {
     id: string;
@@ -18,7 +21,7 @@ interface Row {
     spec_path?: string | null;
 }
 
-export default function PlanReviewHistory({ projectId }: Props) {
+export default function PlanReviewHistory({ projectId, kindFilter }: Props) {
     const [rows, setRows] = useState<Row[]>([]);
     const [loaded, setLoaded] = useState(false);
 
@@ -37,15 +40,17 @@ export default function PlanReviewHistory({ projectId }: Props) {
         return () => { cancelled = true; };
     }, [projectId]);
 
-    if (!loaded || !rows.length) return null;
+    const visibleRows = kindFilter ? rows.filter((r) => r.kind === kindFilter) : rows;
+
+    if (!loaded || !visibleRows.length) return null;
 
     return (
         <details className="rounded-lg border p-3">
             <summary className="cursor-pointer text-sm font-semibold">
-                Plan Review History ({rows.length})
+                Plan Review History ({visibleRows.length})
             </summary>
             <ul className="mt-2 space-y-1 text-xs">
-                {rows.map((r) => (
+                {visibleRows.map((r) => (
                     <li key={r.id} className="flex gap-2">
                         <span className="font-mono opacity-70">{(r.created_at ?? '').slice(0, 10)}</span>
                         <span className="font-semibold">{r.kind}</span>
