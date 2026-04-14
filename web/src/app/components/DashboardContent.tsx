@@ -319,7 +319,7 @@ export default function DashboardContent({ projectSummaries, strategyReadiness }
     const { t } = useTranslation();
 
     return (
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="relative w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-12">
             <header className="relative z-50 mb-12 border-b border-slate-200/60 dark:border-slate-800/60 pb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4 backdrop-blur-sm">
                 <div>
                     <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-cyan-500 dark:from-indigo-400 dark:to-cyan-400">

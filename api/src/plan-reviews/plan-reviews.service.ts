@@ -48,6 +48,21 @@ export class PlanReviewsService {
     return r;
   }
 
+  async readMarkdown(id: string): Promise<string> {
+    const r = await this.findOne(id);
+    if (!r.mdPath) throw new NotFoundException(`PlanReview ${id} has no markdown path`);
+    const resolved = path.resolve(r.mdPath);
+    const baseResolved = path.resolve(this.baseDir);
+    if (!resolved.startsWith(baseResolved + path.sep) && resolved !== baseResolved) {
+      throw new NotFoundException(`PlanReview ${id} markdown path outside data dir`);
+    }
+    try {
+      return await fs.readFile(resolved, 'utf8');
+    } catch {
+      throw new NotFoundException(`PlanReview ${id} markdown file missing`);
+    }
+  }
+
   private slugify(input: string): string {
     const base = path.basename(input, path.extname(input));
     return base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'review';

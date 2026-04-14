@@ -10,6 +10,7 @@ import {
     McpError,
     ErrorCode,
 } from "@modelcontextprotocol/sdk/types.js";
+import { randomUUID } from 'node:crypto';
 import * as db from './db.js';
 import {
     TASK_DESCRIPTION_TEMPLATE,
@@ -282,6 +283,45 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         }
                     },
                     required: ["projectId", "docType", "item"],
+                },
+            },
+            {
+                name: "log_ai_context",
+                description: "**반드시 사용자 메시지당 최초 1회 먼저 호출할 것.** VibePlanner 프로젝트 관련 작업을 시작하기 전에 이 툴을 호출해 사용자의 질문/요청(userPrompt)을 AI_CONTEXT 문서에 기록합니다. 같은 대화 턴에서는 1회만 호출하면 충분합니다. userPrompt가 빈 값이거나 템플릿 뼈대이면 거부됩니다.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        projectId: {
+                            type: "string",
+                            description: "작업이 이루어질 프로젝트의 ID입니다. `list_projects`로 확인한 실제 ID를 사용하세요.",
+                        },
+                        userPrompt: {
+                            type: "string",
+                            description: "사용자의 이번 턴 요청/질문 원문(또는 충실한 요약). 이 값이 AI_CONTEXT 엔트리의 핵심 기록이 됩니다. 반드시 실제 내용이어야 하며 빈 문자열은 거부됩니다.",
+                        },
+                        taskTitle: {
+                            type: "string",
+                            description: "이 요청을 한 줄로 요약한 제목(선택). 예: '태스크 템플릿 자동화'. 생략 시 '사용자 요청'으로 저장.",
+                        },
+                        systemPrompt: {
+                            type: "string",
+                            description: "현재 세션의 시스템 프롬프트나 주요 규약 요약(선택).",
+                        },
+                        model: {
+                            type: "string",
+                            description: "사용 중인 모델 식별자(선택). 예: 'claude-opus-4-6'. 생략 시 'Claude MCP Client'.",
+                        },
+                        contextFiles: {
+                            type: "array",
+                            items: { type: "string" },
+                            description: "이 요청 처리에 관련된 주요 파일 경로 목록(선택).",
+                        },
+                        resultSummary: {
+                            type: "string",
+                            description: "작업 결과 요약(선택). 요청 시작 시점엔 생략해도 되며, 추후 update 시점에 다시 기록해도 됨.",
+                        },
+                    },
+                    required: ["projectId", "userPrompt"],
                 },
             },
             {
@@ -926,6 +966,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 }
                 return {
                     content: [{ type: "text", text: `Item appended to document ${docType} successfully.` }],
+                };
+            }
+
+            case "log_ai_context": {
+                const { projectId, userPrompt, taskTitle, systemPrompt, model, contextFiles, resultSummary } = args as Record<string, any>;
+                if (typeof projectId !== 'string' || !projectId.trim()) {
+                    throw new McpError(ErrorCode.InvalidParams, `projectId가 비어있습니다.`);
+                }
+                if (typeof userPrompt !== 'string' || isTemplateEmpty(userPrompt)) {
+                    throw new McpError(
+                        ErrorCode.InvalidParams,
+                        `log_ai_context에는 사용자 질문/요청 원문(userPrompt)이 반드시 필요합니다. 빈 값이나 템플릿 뼈대는 거부됩니다.`
+                    );
+                }
+                const entry = {
+                    id: randomUUID(),
+                    taskTitle: typeof taskTitle === 'string' && taskTitle.trim() ? taskTitle.trim() : '사용자 요청',
+                    model: typeof model === 'string' && model.trim() ? model.trim() : 'Claude MCP Client',
+                    createdAt: new Date().toISOString(),
+                    systemPrompt: typeof systemPrompt === 'string' ? systemPrompt : '',
+                    userPrompt,
+                    contextFiles: Array.isArray(contextFiles) ? contextFiles.filter((f) => typeof f === 'string') : [],
+                    resultSummary: typeof resultSummary === 'string' ? resultSummary : '',
+                };
+                const appended = await db.appendProjectDocumentItem(projectId, 'AI_CONTEXT', entry, 'MCP Server');
+                if (!appended) {
+                    throw new McpError(ErrorCode.InternalError, `Failed to log AI context for project ${projectId}.`);
+                }
+                return {
+                    content: [{ type: "text", text: `AI context logged (id: ${entry.id}) for project ${projectId}.` }],
                 };
             }
 

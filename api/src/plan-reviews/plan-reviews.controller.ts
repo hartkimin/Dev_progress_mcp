@@ -26,4 +26,10 @@ export class PlanReviewsController {
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);
   }
+
+  @Get('plan-reviews/:id/markdown')
+  @ApiOperation({ summary: 'Plan Review MD 파일 원본 조회' })
+  async markdown(@Param('id') id: string) {
+    return { content: await this.service.readMarkdown(id) };
+  }
 }

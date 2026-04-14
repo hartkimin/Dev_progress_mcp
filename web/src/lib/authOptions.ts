@@ -16,7 +16,7 @@ export const authOptions: NextAuthOptions = {
             id: "dev",
             name: "Dev Login (email only)",
             credentials: {
-              email: { label: "Email", type: "email", placeholder: "dev@local" },
+              email: { label: "Email", type: "email", placeholder: "hart@urock.kr" },
               name: { label: "Name", type: "text", placeholder: "Dev User" },
             },
             async authorize(credentials) {

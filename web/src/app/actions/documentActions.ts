@@ -49,3 +49,15 @@ export async function restoreDocumentVersionAction(projectId: string, docType: s
         return { success: false, error: e.message || 'Failed to restore document version' };
     }
 }
+
+export async function fetchLiveOpenApiSpec(): Promise<any | null> {
+    const base = (process.env.API_BASE_URL || 'http://localhost:3333/api/v1').replace(/\/api\/v1\/?$/, '');
+    try {
+        const res = await fetch(`${base}/api/docs-json`, { cache: 'no-store' });
+        if (!res.ok) return null;
+        return await res.json();
+    } catch (e) {
+        console.error('Error fetching live OpenAPI spec:', e);
+        return null;
+    }
+}

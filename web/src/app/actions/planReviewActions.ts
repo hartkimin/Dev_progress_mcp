@@ -6,6 +6,7 @@ import {
     savePlanReview as dbSavePlanReview,
     listPlanReviews as dbListPlanReviews,
     getPlanReview as dbGetPlanReview,
+    getPlanReviewMarkdown as dbGetPlanReviewMarkdown,
     type YcAnswersInput,
     type PlanReviewInput,
 } from '@/lib/db';
@@ -32,4 +33,8 @@ export async function listPlanReviews(projectId: string, kind?: PlanReviewInput[
 
 export async function getPlanReview(id: string) {
     return dbGetPlanReview(id);
+}
+
+export async function getPlanReviewMarkdown(id: string) {
+    return dbGetPlanReviewMarkdown(id);
 }

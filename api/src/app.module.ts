@@ -11,7 +11,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { EventsModule } from './events/events.module';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { Reflector } from '@nestjs/core';
 import { ExecutionContext, Injectable } from '@nestjs/common';
@@ -25,6 +25,8 @@ import { HealthModule } from './health/health.module';
 import { KeysModule } from './keys/keys.module';
 import { YcAnswersModule } from './yc-answers/yc-answers.module';
 import { PlanReviewsModule } from './plan-reviews/plan-reviews.module';
+import { ActivityLogModule } from './activity-log/activity-log.module';
+import { ActivityLogInterceptor } from './activity-log/activity-log.interceptor';
 
 @Injectable()
 export class GlobalJwtAuthGuard extends JwtAuthGuard {
@@ -89,6 +91,7 @@ export class GlobalJwtAuthGuard extends JwtAuthGuard {
     KeysModule,
     YcAnswersModule,
     PlanReviewsModule,
+    ActivityLogModule,
   ],
   controllers: [AppController],
   providers: [
@@ -100,6 +103,10 @@ export class GlobalJwtAuthGuard extends JwtAuthGuard {
     {
       provide: APP_GUARD,
       useClass: GlobalJwtAuthGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ActivityLogInterceptor,
     },
   ],
 })

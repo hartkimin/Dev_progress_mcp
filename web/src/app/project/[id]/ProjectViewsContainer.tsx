@@ -7,6 +7,7 @@ import KanbanBoardClient from './KanbanBoardClient';
 import CalendarViewClient from './CalendarViewClient';
 import DocumentCanvasView from './DocumentCanvasView';
 import DocumentMarkdownView from './DocumentMarkdownView';
+import SwaggerApiView from './SwaggerApiView';
 import ProjectHealthDashboard from './ProjectHealthDashboard';
 import IssueTrackerView from './IssueTrackerView';
 import CodeReviewView from './CodeReviewView';
@@ -211,7 +212,7 @@ export default function ProjectViewsContainer({
                 <DocumentCanvasView projectId={projectId} docType="DATABASE" title={t('tabDatabase') + ' (ERD)'} />
             )}
             {view === 'api_spec' && (
-                <DocumentMarkdownView projectId={projectId} docType="API" title={t('tabApiSpec')} />
+                <SwaggerApiView projectId={projectId} title={t('tabApiSpec')} />
             )}
 
             {/* 🔌 개발 */}
