@@ -270,6 +270,130 @@ const translations: Translations = {
     'planReview.decision.revise': { en: 'Revise', ko: '수정', zh: '修订', ja: '修正' },
     'planReview.decision.reject': { en: 'Reject', ko: '거절', zh: '拒绝', ja: '却下' },
 
+    // Shared data-source notice
+    'mcpLiveData':           { en: 'Showing live data tracked via MCP.', ko: 'MCP를 통해 수집된 실제 데이터가 표시됩니다.', zh: '显示通过 MCP 收集的实时数据。', ja: 'MCP 経由で収集されたライブデータを表示しています。' },
+    'reviewRequiredShort':   { en: 'Review', ko: '검토 필요', zh: '需要审查', ja: '要レビュー' },
+
+    // Empty-state prompt
+    'emptyState.aiPromptSuggestion': { en: 'AI Prompt Suggestion', ko: 'AI 프롬프트 제안', zh: 'AI 提示建议', ja: 'AI プロンプト提案' },
+    'emptyState.copyPrompt':         { en: 'Copy prompt', ko: '프롬프트 복사', zh: '复制提示', ja: 'プロンプトをコピー' },
+    'emptyState.copied':             { en: 'Copied!', ko: '복사 완료!', zh: '已复制!', ja: 'コピーしました!' },
+
+    // Issue Tracker
+    'issue.title':        { en: 'Issue Tracker Status', ko: '이슈 트래커 현황', zh: '问题跟踪状态', ja: 'イシュートラッカー状況' },
+    'issue.subtitle':     { en: 'Track issues and bug reports for this project.', ko: '프로젝트에서 발생한 이슈 및 버그 리포트를 추적합니다.', zh: '跟踪此项目的问题和错误报告。', ja: 'プロジェクトのイシューとバグレポートを追跡します。' },
+    'issue.new':          { en: '+ New Issue', ko: '+ 새로운 이슈', zh: '+ 新建问题', ja: '+ 新規イシュー' },
+    'issue.newPrompt':    { en: 'Enter new issue title:', ko: '새로운 이슈 제목을 입력하세요:', zh: '输入新问题标题:', ja: '新規イシューのタイトル:' },
+    'issue.search':       { en: 'Search issues...', ko: '이슈 검색...', zh: '搜索问题...', ja: 'イシュー検索...' },
+    'issue.clearFilter':  { en: 'Clear Filter', ko: '필터 초기화', zh: '清除筛选', ja: 'フィルタ初期化' },
+    'issue.empty.title':  { en: 'No Issues Found', ko: '등록된 이슈가 없습니다', zh: '暂无问题', ja: 'イシューがありません' },
+    'issue.empty.desc':   { en: 'There are no bugs or feature requests for this project. Ask AI to scaffold initial issues.', ko: '현재 프로젝트에 등록된 버그나 기능 요청 이슈가 없습니다. AI에게 초기 이슈를 스캐폴딩 하도록 요청해보세요.', zh: '该项目暂无错误或功能请求。可请求 AI 生成初始问题。', ja: 'このプロジェクトにはバグや機能要求がありません。AI に初期イシューの作成を依頼してください。' },
+    'issue.empty.prompt': { en: 'Create 5 essential backend/frontend core issues suitable for the current project and add them to the Issue Tracker.', ko: '현재 프로젝트의 성격에 어울리는 백엔드/프론트엔드 필수 태스크 기반으로 핵심 이슈 5가지를 생성해서 이슈 트래커에 넣어줘.', zh: '根据当前项目的特点,基于必备的后端/前端任务,创建 5 个核心问题并添加到问题跟踪器。', ja: '現在のプロジェクトに適したバックエンド/フロントエンドの必須タスクを基に、核心的なイシューを 5 つ作成してイシュートラッカーに追加してください。' },
+    'issue.col.title':    { en: 'Title', ko: '제목', zh: '标题', ja: 'タイトル' },
+    'issue.col.severity': { en: 'Severity', ko: '심각도', zh: '严重程度', ja: '重要度' },
+    'issue.col.status':   { en: 'Status', ko: '상태', zh: '状态', ja: 'ステータス' },
+    'issue.col.assignee': { en: 'Assignee', ko: '담당자', zh: '负责人', ja: '担当者' },
+    'issue.col.updated':  { en: 'Updated', ko: '업데이트', zh: '更新时间', ja: '更新' },
+    'issue.unassigned':   { en: 'Unassigned', ko: '미배정', zh: '未分配', ja: '未割当' },
+    'issue.noMatch':      { en: 'No issues match your filter.', ko: '해당 조건의 이슈가 없습니다.', zh: '没有符合条件的问题。', ja: '条件に一致するイシューがありません。' },
+    'issue.status.reported':  { en: 'Reported', ko: '발견', zh: '已报告', ja: '報告済み' },
+    'issue.status.analyzing': { en: 'Analyzing', ko: '분석 중', zh: '分析中', ja: '分析中' },
+    'issue.status.fixing':    { en: 'Fixing', ko: '수정 중', zh: '修复中', ja: '修正中' },
+    'issue.status.verifying': { en: 'Verifying', ko: '검증 중', zh: '验证中', ja: '検証中' },
+    'issue.status.closed':    { en: 'Closed', ko: '종료', zh: '已关闭', ja: '完了' },
+
+    // AI Context
+    'aiCtx.empty.title':    { en: 'No AI Context Records', ko: 'AI 컨텍스트 기록이 없습니다', zh: '暂无 AI 上下文记录', ja: 'AI コンテキスト記録なし' },
+    'aiCtx.empty.desc':     { en: 'There are no AI context records for this project yet. Ask AI to generate initial context data including system prompts and summaries.', ko: '아직 이 프로젝트에 대해 AI가 작업을 수행하고 남긴 컨텍스트 기록이 없습니다. AI에게 시스템 프롬프트 및 작업 요약을 포함한 초기 데이터 생성을 요청해보세요.', zh: '该项目尚无 AI 上下文记录。可请求 AI 生成包含系统提示和摘要的初始数据。', ja: 'このプロジェクトにはまだ AI コンテキスト記録がありません。システムプロンプトと要約を含む初期データの生成を AI に依頼してください。' },
+    'aiCtx.empty.prompt':   { en: 'Create data for the 3 most recent virtual AI context records (including system prompt, user prompt, and summary) and add them to the AI Context tab.', ko: '현재 프로젝트의 성격에 맞는 가상의 AI 컨텍스트(시스템 프롬프트, 사용자 지시, 결과 요약 포함) 데이터 3개를 생성해줘.', zh: '为当前项目创建 3 条最近的虚拟 AI 上下文记录(包含系统提示、用户提示和摘要),并添加到 AI 上下文标签。', ja: '現在のプロジェクトに合わせた仮想 AI コンテキストデータ(システムプロンプト、ユーザー指示、結果要約を含む)を 3 件作成して AI コンテキストタブに追加してください。' },
+    'aiCtx.totalRecords':   { en: 'Total Records', ko: '전체 기록', zh: '总记录', ja: '全記録' },
+    'aiCtx.modelsUsed':     { en: 'Models Used', ko: '사용 모델', zh: '使用的模型', ja: '使用モデル' },
+    'aiCtx.contextFiles':   { en: 'Context Files', ko: '컨텍스트 파일', zh: '上下文文件', ja: 'コンテキストファイル' },
+    'aiCtx.prompts':        { en: 'Prompts', ko: '프롬프트', zh: '提示词', ja: 'プロンプト' },
+    'aiCtx.filesUnit':      { en: 'files', ko: '파일', zh: '个文件', ja: 'ファイル' },
+    'aiCtx.systemPrompt':   { en: 'System Prompt', ko: '시스템 프롬프트', zh: '系统提示', ja: 'システムプロンプト' },
+    'aiCtx.userPrompt':     { en: 'User Prompt', ko: '사용자 지시사항', zh: '用户指令', ja: 'ユーザー指示' },
+    'aiCtx.resultSummary':  { en: 'Result Summary', ko: '결과 요약', zh: '结果摘要', ja: '結果サマリ' },
+
+    // Deployment
+    'deploy.title':          { en: 'Deployment Management', ko: '배포 현황 관리', zh: '部署管理', ja: 'デプロイ管理' },
+    'deploy.subtitle':       { en: 'Track project deployments and statuses.', ko: '프로젝트의 배포 내역 및 진행 상태를 확인합니다.', zh: '跟踪项目的部署情况和状态。', ja: 'プロジェクトのデプロイ履歴と状態を追跡します。' },
+    'deploy.trigger':        { en: 'Trigger Deploy', ko: '새 배포 시작', zh: '触发部署', ja: 'デプロイ開始' },
+    'deploy.versionPrompt':  { en: 'Enter new deploy version (e.g., v1.0.3):', ko: '새로운 배포 버전을 입력하세요 (예: v1.0.3):', zh: '输入新部署版本(例如 v1.0.3):', ja: '新規デプロイバージョンを入力 (例: v1.0.3):' },
+    'deploy.empty.title':    { en: 'No Deployments Found', ko: '배포 이력이 없습니다', zh: '暂无部署记录', ja: 'デプロイ履歴なし' },
+    'deploy.empty.desc':     { en: 'There is no deployment pipeline data recorded for this project yet. Ask AI to generate virtual deployment history.', ko: '아직 이 프로젝트에 기록된 배포 파이프라인 데이터가 없습니다. AI에게 가상의 배포 내역 생성을 요청해보세요.', zh: '该项目尚无部署流水线数据。可请求 AI 生成虚拟部署历史。', ja: 'このプロジェクトにはまだデプロイパイプラインのデータがありません。AI に仮想デプロイ履歴の生成を依頼してください。' },
+    'deploy.empty.prompt':   { en: 'Create data for the last 3 virtual deployment pipelines (including production and staging environments) and add them to the Deploy tab.', ko: '프로덕션 환경과 스테이징 환경을 포함한 최근 3건의 가상의 배포 파이프라인 데이터를 배포 탭에 생성해줘.', zh: '创建最近 3 次虚拟部署流水线数据(包含生产和预发布环境),并添加到部署标签。', ja: '本番環境とステージング環境を含む直近 3 件の仮想デプロイパイプラインデータを作成してデプロイタブに追加してください。' },
+    'deploy.totalDeploys':   { en: 'Total Deploys', ko: '전체 배포', zh: '总部署', ja: '全デプロイ' },
+    'deploy.success':        { en: 'Success', ko: '성공', zh: '成功', ja: '成功' },
+    'deploy.failed':         { en: 'Failed', ko: '실패', zh: '失败', ja: '失敗' },
+    'deploy.rollbacks':      { en: 'Rollbacks', ko: '롤백', zh: '回滚', ja: 'ロールバック' },
+    'deploy.status.running': { en: 'Running', ko: '실행 중', zh: '运行中', ja: '実行中' },
+    'deploy.status.pending': { en: 'Pending', ko: '대기 중', zh: '等待中', ja: '保留中' },
+    'deploy.history':        { en: 'Deployment History', ko: '배포 이력', zh: '部署历史', ja: 'デプロイ履歴' },
+    'deploy.checklist':      { en: 'Deploy Checklist', ko: '배포 체크리스트', zh: '部署检查清单', ja: 'デプロイチェックリスト' },
+    'deploy.done':           { en: 'done', ko: '완료', zh: '完成', ja: '完了' },
+
+    // Test Dashboard
+    'test.title':         { en: 'Test Execution Results', ko: '테스트 실행 결과', zh: '测试执行结果', ja: 'テスト実行結果' },
+    'test.subtitle':      { en: 'Analyze automated test suites and failure reasons.', ko: '자동화된 테스트 케이스 현황 및 실패 원인을 분석합니다.', zh: '分析自动化测试套件和失败原因。', ja: '自動化テストスイートと失敗原因を分析します。' },
+    'test.log':           { en: '+ Log Test', ko: '+ 테스트 결과 로깅', zh: '+ 记录测试', ja: '+ テスト記録' },
+    'test.namePrompt':    { en: 'Enter failed test name:', ko: '실패한 테스트 이름을 입력하세요:', zh: '输入失败测试名称:', ja: '失敗したテスト名を入力:' },
+    'test.empty.title':   { en: 'No Test Results Found', ko: '등록된 테스트 결과가 없습니다', zh: '暂无测试结果', ja: 'テスト結果がありません' },
+    'test.empty.desc':    { en: 'There are no automated test results for this project. Ask AI to generate initial test suite data.', ko: '현재 프로젝트에 수행된 자동화 테스트 결과가 없습니다. AI에게 초기 테스트 스위트 데이터를 생성해 달라고 요청해보세요.', zh: '该项目暂无自动化测试结果。可请求 AI 生成初始测试套件数据。', ja: 'このプロジェクトには自動化テスト結果がありません。AI に初期テストスイートデータの生成を依頼してください。' },
+    'test.empty.prompt':  { en: 'Create virtual unit and integration test result data (including successes/failures) for the main modules of this project and add them to the Test tab.', ko: '현재 프로젝트의 주요 모듈에 대한 가상의 단위 테스트 및 통합 테스트 결과 데이터(성공/실패 엣지 케이스 포함)를 테스트 탭에 추가해줘.', zh: '为当前项目的主要模块创建虚拟单元测试和集成测试结果数据(包含成功/失败),并添加到测试标签。', ja: '現在のプロジェクトの主要モジュールに対する仮想ユニットテスト・統合テスト結果データ(成功/失敗を含む)をテストタブに追加してください。' },
+    'test.overallPassRate':{ en: 'Overall Pass Rate', ko: '전체 통과율', zh: '总通过率', ja: '全体合格率' },
+    'test.unit':          { en: 'Unit', ko: '단위 테스트', zh: '单元测试', ja: 'ユニット' },
+    'test.integration':   { en: 'Integration', ko: '통합 테스트', zh: '集成测试', ja: '統合' },
+    'test.e2e':           { en: 'E2E', ko: 'E2E 테스트', zh: 'E2E 测试', ja: 'E2E' },
+    'test.suites':        { en: 'Test Suites', ko: '테스트 스위트', zh: '测试套件', ja: 'テストスイート' },
+    'test.failedTests':   { en: 'Failed Tests', ko: '실패한 테스트', zh: '失败的测试', ja: '失敗したテスト' },
+
+    // Code Review
+    'pr.title':           { en: 'Code Review Status', ko: '코드 리뷰 현황', zh: '代码审查状态', ja: 'コードレビュー状況' },
+    'pr.subtitle':        { en: 'Track active pull requests and code reviews.', ko: '진행 중인 Pull Request 및 리뷰 내역을 확인합니다.', zh: '跟踪进行中的 Pull Request 和代码审查。', ja: '進行中の Pull Request とレビュー履歴を追跡します。' },
+    'pr.add':             { en: '+ Add PR', ko: '+ PR 등록', zh: '+ 添加 PR', ja: '+ PR 追加' },
+    'pr.prompt':          { en: 'Enter new PR link or title:', ko: '새로운 PR 링크나 제목을 입력하세요:', zh: '输入新 PR 链接或标题:', ja: '新規 PR リンクまたはタイトルを入力:' },
+    'pr.open':            { en: 'Open PRs', ko: '열린 PR', zh: '开放 PR', ja: 'オープン PR' },
+    'pr.reviewNeeded':    { en: 'Review Needed', ko: '검토 필요', zh: '需要审查', ja: '要レビュー' },
+    'pr.aiGenerated':     { en: 'AI-Generated', ko: 'AI 생성', zh: 'AI 生成', ja: 'AI 生成' },
+    'pr.securityPass':    { en: 'Security Pass', ko: '보안 통과율', zh: '安全通过率', ja: 'セキュリティ合格率' },
+    'pr.empty.title':     { en: 'No Pull Requests Found', ko: '현재 등록된 PR이 없습니다', zh: '暂无 Pull Request', ja: 'Pull Request がありません' },
+    'pr.empty.desc':      { en: 'There are no pull requests to review. Ask AI to generate initial PR data.', ko: '아직 코드 리뷰를 진행할 Pull Request 데이터가 없습니다. AI에게 초기 모의 PR 데이터를 생성해 달라고 요청해보세요.', zh: '暂无可审查的 Pull Request。可请求 AI 生成初始 PR 数据。', ja: 'レビューする Pull Request がありません。AI に初期 PR データの生成を依頼してください。' },
+    'pr.empty.prompt':    { en: 'Create 3 virtual pull requests related to authentication logic development and add them to the Code Review tab.', ko: '사용자 인증 로직(Auth) 개발과 관련된 가상의 Pull Request 이력 3개를 만들어서 코드 리뷰 탭에 추가해줘.', zh: '创建 3 个与用户认证逻辑开发相关的虚拟 Pull Request 并添加到代码审查标签。', ja: '認証ロジック開発に関する仮想 Pull Request を 3 件作成してコードレビュータブに追加してください。' },
+    'pr.shortReview':     { en: 'Review', ko: '검토', zh: '审查', ja: 'レビュー' },
+    'pr.securityChecklist':{ en: 'Security Checklist', ko: '보안 체크리스트', zh: '安全检查清单', ja: 'セキュリティチェックリスト' },
+    'pr.depChanges':      { en: 'Dep Changes', ko: '의존성 변경', zh: '依赖变更', ja: '依存関係変更' },
+    'pr.reviewers':       { en: 'Reviewers', ko: '리뷰어', zh: '审查者', ja: 'レビュアー' },
+    'pr.status.open':               { en: 'Open', ko: '열림', zh: '开放', ja: 'オープン' },
+    'pr.status.approved':           { en: 'Approved', ko: '승인', zh: '已批准', ja: '承認' },
+    'pr.status.changes_requested':  { en: 'Changes', ko: '변경 요청', zh: '请求变更', ja: '変更要求' },
+    'pr.status.merged':             { en: 'Merged', ko: '병합됨', zh: '已合并', ja: 'マージ済み' },
+
+    // Admin Integrations
+    'integ.noParams':     { en: 'No parameters required', ko: '파라미터 없음', zh: '无需参数', ja: 'パラメータなし' },
+
+    // Calendar View (CalendarViewClient)
+    'cal.empty.title':    { en: 'No Timeline Events', ko: '타임라인 이벤트가 없습니다', zh: '暂无时间线事件', ja: 'タイムラインイベントなし' },
+    'cal.empty.desc':     { en: 'No tasks yet, or no created/started/review/completed timestamps recorded. Creating or moving tasks auto-populates the calendar.', ko: '태스크가 아직 없거나 생성/시작/리뷰/완료 시각이 기록되지 않았습니다. 태스크를 생성·이동하면 자동으로 캘린더에 반영됩니다.', zh: '尚无任务,或未记录创建/开始/审查/完成时间戳。创建或移动任务会自动填充日历。', ja: 'タスクがまだないか、作成/開始/レビュー/完了のタイムスタンプが記録されていません。タスクを作成・移動すると自動的にカレンダーに反映されます。' },
+    'cal.empty.prompt':   { en: 'Create 5 key frontend and backend tasks for this week aligned to the project milestone, with scheduled dates (including due dates).', ko: '현재 프로젝트의 마일스톤에 맞게 이번 주에 수행할 주요 프론트엔드 및 백엔드 태스크 5개를 달력 일정(마감일 포함)으로 생성해줘.', zh: '根据当前项目里程碑,为本周创建 5 个主要前端和后端任务(包含截止日期)。', ja: '現在のプロジェクトのマイルストーンに合わせて、今週実施する主要なフロントエンド・バックエンドタスク 5 件を(締切日付きで)カレンダーに作成してください。' },
+    'cal.timelineEvents': { en: 'Timeline events:', ko: '타임라인 이벤트:', zh: '时间线事件:', ja: 'タイムラインイベント:' },
+    'cal.eventCountSuffix':{ en: 'events', ko: '개 이벤트', zh: '个事件', ja: '件のイベント' },
+    'cal.moreSuffix':     { en: 'more', ko: '개 더보기', zh: '更多', ja: '件さらに' },
+    'cal.event.CREATED':    { en: 'Created', ko: '생성', zh: '创建', ja: '作成' },
+    'cal.event.STARTED':    { en: 'Started', ko: '시작', zh: '开始', ja: '開始' },
+    'cal.event.REVIEW':     { en: 'Review', ko: '리뷰', zh: '审查', ja: 'レビュー' },
+    'cal.event.DONE':       { en: 'Done', ko: '완료', zh: '完成', ja: '完了' },
+    'cal.event.PLAN_START': { en: 'Planned', ko: '예정시작', zh: '计划开始', ja: '予定開始' },
+    'cal.event.DUE':        { en: 'Due', ko: '마감', zh: '截止', ja: '締切' },
+    'cal.status.TODO':        { en: 'To Do', ko: '할 일', zh: '待办', ja: '未着手' },
+    'cal.status.IN_PROGRESS': { en: 'In Progress', ko: '진행 중', zh: '进行中', ja: '進行中' },
+    'cal.status.REVIEW':      { en: 'Review', ko: '리뷰', zh: '审查', ja: 'レビュー' },
+    'cal.status.DONE':        { en: 'Done', ko: '완료', zh: '已完成', ja: '完了' },
+    // Format token for "year month" header — {year} / {month} placeholders
+    'cal.yearMonthFormat':    { en: '{month} {year}', ko: '{year}년 {month}', zh: '{year}年{month}', ja: '{year}年{month}' },
+    // "N-th day of month" for modal header
+    'cal.dayFormat':          { en: 'day {day}', ko: '{day}일', zh: '{day}日', ja: '{day}日' },
+
     // Strategy Readiness (Overview dashboard widgets)
     'strategyReadinessTitle':    { en: 'Strategy Readiness',   ko: '전략 준비도', zh: '战略就绪度', ja: '戦略準備度' },
     'ycCompletionLabel':         { en: 'YC completion',        ko: 'YC 완료율', zh: 'YC 完成率', ja: 'YC 完了率' },
@@ -336,4 +460,15 @@ export function useTranslation() {
         throw new Error('useTranslation must be used within a LanguageProvider');
     }
     return context;
+}
+
+const BCP47_LOCALES: Record<Language, string> = {
+    ko: 'ko-KR',
+    en: 'en-US',
+    zh: 'zh-CN',
+    ja: 'ja-JP',
+};
+
+export function toLocale(lang: Language): string {
+    return BCP47_LOCALES[lang] ?? 'en-US';
 }

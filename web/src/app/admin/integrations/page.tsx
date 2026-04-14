@@ -450,7 +450,7 @@ export default function IntegrationsPage() {
                                                             </div>
                                                         ) : (
                                                             <p className="text-xs text-slate-400 italic">
-                                                                {language === 'ko' ? '파라미터 없음' : 'No parameters required'}
+                                                                {t('integ.noParams')}
                                                             </p>
                                                         )}
                                                     </div>

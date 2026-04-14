@@ -18,17 +18,16 @@ interface PR {
 
 import { fetchProjectDocument } from '@/app/actions/documentActions';
 
-const STY: Record<PRStatus, { ko: string; en: string; cls: string }> = {
-    open: { ko: '열림', en: 'Open', cls: 'text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20' },
-    approved: { ko: '승인', en: 'Approved', cls: 'text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20' },
-    changes_requested: { ko: '변경 요청', en: 'Changes', cls: 'text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20' },
-    merged: { ko: '병합됨', en: 'Merged', cls: 'text-violet-700 dark:text-violet-400 bg-violet-100 dark:bg-violet-500/20' },
+const STY: Record<PRStatus, { labelKey: string; cls: string }> = {
+    open:              { labelKey: 'pr.status.open',               cls: 'text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20' },
+    approved:          { labelKey: 'pr.status.approved',           cls: 'text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20' },
+    changes_requested: { labelKey: 'pr.status.changes_requested',  cls: 'text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20' },
+    merged:            { labelKey: 'pr.status.merged',             cls: 'text-violet-700 dark:text-violet-400 bg-violet-100 dark:bg-violet-500/20' },
 };
 
 export default function CodeReviewView({ projectId }: { projectId: string }) {
-    const { language } = useTranslation();
+    const { t } = useTranslation();
     const [expanded, setExpanded] = useState<string | null>(null);
-    const ko = language === 'ko';
 
     const [prs, setPrs] = useState<PR[]>([]);
     const [loading, setLoading] = useState(true);
@@ -66,7 +65,7 @@ export default function CodeReviewView({ projectId }: { projectId: string }) {
     }
 
     const handleCreatePR = async () => {
-        const prLink = prompt(ko ? '새로운 PR 링크나 제목을 입력하세요:' : 'Enter new PR link or title:');
+        const prLink = prompt(t('pr.prompt'));
         if (!prLink) return;
 
         const newPR = {
@@ -107,27 +106,27 @@ export default function CodeReviewView({ projectId }: { projectId: string }) {
             <div className="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
                 <div>
                     <h3 className="font-bold text-slate-800 dark:text-slate-200">
-                        {ko ? '코드 리뷰 현황' : 'Code Review Status'}
+                        {t('pr.title')}
                     </h3>
                     <p className="text-sm text-slate-500 mt-1">
-                        {ko ? '진행 중인 Pull Request 및 리뷰 내역을 확인합니다.' : 'Track active pull requests and code reviews.'}
+                        {t('pr.subtitle')}
                     </p>
                 </div>
                 <button
                     onClick={handleCreatePR}
                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors"
                 >
-                    {ko ? '+ PR 등록' : '+ Add PR'}
+                    {t('pr.add')}
                 </button>
             </div>
 
             {/* Summary */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { v: prs.filter(p => p.status === 'open').length, l: ko ? '열린 PR' : 'Open PRs', c: 'text-emerald-600 dark:text-emerald-400' },
-                    { v: prs.filter(p => p.reviewRequired).length, l: ko ? '검토 필요' : 'Review Needed', c: 'text-amber-600 dark:text-amber-400' },
-                    { v: prs.filter(p => p.aiGenerated).length, l: ko ? 'AI 생성' : 'AI-Generated', c: 'text-violet-600 dark:text-violet-400' },
-                    { v: `${passRate}%`, l: ko ? '보안 통과율' : 'Security Pass', c: passRate === 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' },
+                    { v: prs.filter(p => p.status === 'open').length, l: t('pr.open'), c: 'text-emerald-600 dark:text-emerald-400' },
+                    { v: prs.filter(p => p.reviewRequired).length, l: t('pr.reviewNeeded'), c: 'text-amber-600 dark:text-amber-400' },
+                    { v: prs.filter(p => p.aiGenerated).length, l: t('pr.aiGenerated'), c: 'text-violet-600 dark:text-violet-400' },
+                    { v: `${passRate}%`, l: t('pr.securityPass'), c: passRate === 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' },
                 ].map((card, i) => (
                     <div key={i} className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
                         <div className={`text-2xl font-bold ${card.c}`}>{card.v}</div>
@@ -140,9 +139,9 @@ export default function CodeReviewView({ projectId }: { projectId: string }) {
             {prs.length === 0 ? (
                 <div className="mt-2">
                     <EmptyStatePrompt
-                        title={ko ? "현재 등록된 PR이 없습니다" : "No Pull Requests Found"}
-                        description={ko ? "아직 코드 리뷰를 진행할 Pull Request 데이터가 없습니다. AI에게 초기 모의 PR 데이터를 생성해 달라고 요청해보세요." : "There are no pull requests to review. Ask AI to generate initial PR data."}
-                        suggestedPrompt={ko ? "사용자 인증 로직(Auth) 개발과 관련된 가상의 Pull Request 이력 3개를 만들어서 코드 리뷰 탭에 추가해줘." : "Create 3 virtual pull requests related to authentication logic development and add them to the Code Review tab."}
+                        title={t('pr.empty.title')}
+                        description={t('pr.empty.desc')}
+                        suggestedPrompt={t('pr.empty.prompt')}
                     />
                 </div>
             ) : (
@@ -159,7 +158,7 @@ export default function CodeReviewView({ projectId }: { projectId: string }) {
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <span className="font-medium text-slate-800 dark:text-slate-200 truncate">{pr.title}</span>
                                             {pr.aiGenerated && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400"><Bot className="w-3 h-3" /> AI</span>}
-                                            {pr.reviewRequired && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">⚠️ {ko ? '검토' : 'Review'}</span>}
+                                            {pr.reviewRequired && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">⚠️ {t('pr.shortReview')}</span>}
                                             {failed.length > 0 && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400"><ShieldCheck className="w-3 h-3" /> {failed.length}</span>}
                                         </div>
                                         <div className="text-xs text-slate-500 mt-1 flex items-center gap-3">
@@ -174,7 +173,7 @@ export default function CodeReviewView({ projectId }: { projectId: string }) {
                                 {isExp && (
                                     <div className="border-t border-slate-200 dark:border-slate-700 p-4 flex flex-col md:flex-row gap-6 bg-slate-50/50 dark:bg-slate-800/20">
                                         <div className="flex-1">
-                                            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-indigo-500" />{ko ? '보안 체크리스트' : 'Security Checklist'}</h4>
+                                            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-indigo-500" />{t('pr.securityChecklist')}</h4>
                                             {pr.securityChecks.map((c, i) => (
                                                 <div key={i} className="flex items-center gap-2 text-sm mb-1.5">
                                                     {c.passed ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
@@ -184,7 +183,7 @@ export default function CodeReviewView({ projectId }: { projectId: string }) {
                                         </div>
                                         {pr.depChanges.length > 0 && (
                                             <div className="flex-1">
-                                                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5"><Package className="w-4 h-4 text-amber-500" />{ko ? '의존성 변경' : 'Dep Changes'}</h4>
+                                                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5"><Package className="w-4 h-4 text-amber-500" />{t('pr.depChanges')}</h4>
                                                 {pr.depChanges.map((d, i) => (
                                                     <div key={i} className="flex items-center gap-2 text-sm mb-1.5">
                                                         <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${d.type === 'added' ? 'bg-emerald-100 text-emerald-600' : d.type === 'removed' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>{d.type === 'added' ? '+' : d.type === 'removed' ? '-' : '↑'}</span>
@@ -196,7 +195,7 @@ export default function CodeReviewView({ projectId }: { projectId: string }) {
                                             </div>
                                         )}
                                         <div className="min-w-[150px]">
-                                            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5"><Eye className="w-4 h-4 text-blue-500" />{ko ? '리뷰어' : 'Reviewers'}</h4>
+                                            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5"><Eye className="w-4 h-4 text-blue-500" />{t('pr.reviewers')}</h4>
                                             {pr.reviewers.map((r, i) => <div key={i} className="text-sm text-slate-600 dark:text-slate-400 mb-1">{r}</div>)}
                                         </div>
                                     </div>
@@ -209,7 +208,7 @@ export default function CodeReviewView({ projectId }: { projectId: string }) {
 
             <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 text-xs text-slate-500">
                 <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-                {ko ? 'MCP를 통해 수집된 실제 데이터가 표시됩니다.' : 'Showing live data tracked via MCP.'}
+                {t('mcpLiveData')}
             </div>
         </div>
     );

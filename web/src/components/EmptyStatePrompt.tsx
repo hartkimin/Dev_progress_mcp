@@ -11,7 +11,7 @@ interface EmptyStatePromptProps {
 }
 
 export default function EmptyStatePrompt({ title, description, suggestedPrompt }: EmptyStatePromptProps) {
-    const { language } = useTranslation();
+    const { t } = useTranslation();
     const [copied, setCopied] = React.useState(false);
 
     const handleCopy = () => {
@@ -33,7 +33,7 @@ export default function EmptyStatePrompt({ title, description, suggestedPrompt }
             <div className="w-full max-w-2xl bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-indigo-100 dark:border-indigo-500/20 p-5 relative group text-left shadow-sm">
                 <div className="absolute -top-3 left-6 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm border border-indigo-200 dark:border-indigo-500/30">
                     <Sparkles className="w-3 h-3" />
-                    {language === 'ko' ? 'AI 프롬프트 제안' : 'AI Prompt Suggestion'}
+                    {t('emptyState.aiPromptSuggestion')}
                 </div>
                 <p className="text-sm text-slate-700 dark:text-slate-300 font-medium whitespace-pre-wrap mt-2 pr-12 leading-relaxed font-mono">
                     &quot;{suggestedPrompt}&quot;
@@ -42,13 +42,13 @@ export default function EmptyStatePrompt({ title, description, suggestedPrompt }
                     <button
                         onClick={handleCopy}
                         className="p-2.5 bg-white dark:bg-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 border border-slate-200 dark:border-slate-600 rounded-lg transition-all shadow-sm text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-500/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 active:scale-95"
-                        title={language === 'ko' ? '프롬프트 복사' : 'Copy prompt'}
+                        title={t('emptyState.copyPrompt')}
                     >
                         {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                     </button>
                     {copied && (
                         <p className="absolute -bottom-6 right-0 text-[10px] text-emerald-500 font-bold animate-pulse whitespace-nowrap">
-                            {language === 'ko' ? '복사 완료!' : 'Copied!'}
+                            {t('emptyState.copied')}
                         </p>
                     )}
                 </div>

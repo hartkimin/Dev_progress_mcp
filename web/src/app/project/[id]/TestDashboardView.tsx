@@ -12,8 +12,7 @@ interface FailedTest { name: string; suite: string; error: string; aiGenerated: 
 // Dummy data removed, now fetched from DB
 
 export default function TestDashboardView({ projectId }: { projectId: string }) {
-    const { language } = useTranslation();
-    const ko = language === 'ko';
+    const { t } = useTranslation();
 
     const [data, setData] = useState<{ suites: TestSuite[], failed: FailedTest[] }>({ suites: [], failed: [] });
     const [loading, setLoading] = useState(true);
@@ -58,7 +57,7 @@ export default function TestDashboardView({ projectId }: { projectId: string }) 
     }
 
     const handleCreateFailedTest = async () => {
-        const testName = prompt(ko ? '실패한 테스트 이름을 입력하세요:' : 'Enter failed test name:');
+        const testName = prompt(t('test.namePrompt'));
         if (!testName) return;
 
         try {
@@ -92,17 +91,17 @@ export default function TestDashboardView({ projectId }: { projectId: string }) 
             <div className="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
                 <div>
                     <h3 className="font-bold text-slate-800 dark:text-slate-200">
-                        {ko ? '테스트 실행 결과' : 'Test Execution Results'}
+                        {t('test.title')}
                     </h3>
                     <p className="text-sm text-slate-500 mt-1">
-                        {ko ? '자동화된 테스트 케이스 현황 및 실패 원인을 분석합니다.' : 'Analyze automated test suites and failure reasons.'}
+                        {t('test.subtitle')}
                     </p>
                 </div>
                 <button
                     onClick={handleCreateFailedTest}
                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors"
                 >
-                    {ko ? '+ 테스트 결과 로깅' : '+ Log Test'}
+                    {t('test.log')}
                 </button>
             </div>
 
@@ -110,9 +109,9 @@ export default function TestDashboardView({ projectId }: { projectId: string }) 
             {SUITES.length === 0 ? (
                 <div className="mt-2">
                     <EmptyStatePrompt
-                        title={ko ? "등록된 테스트 결과가 없습니다" : "No Test Results Found"}
-                        description={ko ? "현재 프로젝트에 수행된 자동화 테스트 결과가 없습니다. AI에게 초기 테스트 스위트 데이터를 생성해 달라고 요청해보세요." : "There are no automated test results for this project. Ask AI to generate initial test suite data."}
-                        suggestedPrompt={ko ? "현재 프로젝트의 주요 모듈에 대한 가상의 단위 테스트 및 통합 테스트 결과 데이터(성공/실패 엣지 케이스 포함)를 테스트 탭에 추가해줘." : "Create virtual unit and integration test result data (including successes/failures) for the main modules of this project and add them to the Test tab."}
+                        title={t('test.empty.title')}
+                        description={t('test.empty.desc')}
+                        suggestedPrompt={t('test.empty.prompt')}
                     />
                 </div>
             ) : (
@@ -122,12 +121,12 @@ export default function TestDashboardView({ projectId }: { projectId: string }) 
                         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
                             <div className="flex items-center justify-between mb-2"><BarChart3 className="w-5 h-5 text-indigo-500" /></div>
                             <div className="text-3xl font-bold text-slate-800 dark:text-white">{coverage}%</div>
-                            <div className="text-sm text-slate-500 mt-1">{ko ? '전체 통과율' : 'Overall Pass Rate'}</div>
+                            <div className="text-sm text-slate-500 mt-1">{t('test.overallPassRate')}</div>
                             <div className="mt-3 w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                 <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all" style={{ width: `${coverage}%` }} />
                             </div>
                         </div>
-                        {([['unit', ko ? '단위 테스트' : 'Unit', 'text-blue-600 dark:text-blue-400', Layers], ['integration', ko ? '통합 테스트' : 'Integration', 'text-amber-600 dark:text-amber-400', Zap], ['e2e', ko ? 'E2E 테스트' : 'E2E', 'text-violet-600 dark:text-violet-400', TestTube2]] as const).map(([type, label, color, Icon]) => (
+                        {([['unit', t('test.unit'), 'text-blue-600 dark:text-blue-400', Layers], ['integration', t('test.integration'), 'text-amber-600 dark:text-amber-400', Zap], ['e2e', t('test.e2e'), 'text-violet-600 dark:text-violet-400', TestTube2]] as const).map(([type, label, color, Icon]) => (
                             <div key={type} className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
                                 <div className="flex items-center justify-between mb-2"><Icon className={`w-5 h-5 ${color}`} /></div>
                                 <div className={`text-3xl font-bold ${color}`}>{typeRate(byType[type])}%</div>
@@ -139,7 +138,7 @@ export default function TestDashboardView({ projectId }: { projectId: string }) 
                     {/* Test Suites */}
                     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                         <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-                            <h3 className="font-semibold text-slate-800 dark:text-slate-200">{ko ? '테스트 스위트' : 'Test Suites'}</h3>
+                            <h3 className="font-semibold text-slate-800 dark:text-slate-200">{t('test.suites')}</h3>
                         </div>
                         <div className="divide-y divide-slate-100 dark:divide-slate-800">
                             {SUITES.map((s, i) => {
@@ -172,7 +171,7 @@ export default function TestDashboardView({ projectId }: { projectId: string }) 
                         <div className="bg-white dark:bg-slate-900 rounded-xl border border-red-200 dark:border-red-900/50 shadow-sm overflow-hidden">
                             <div className="p-4 border-b border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-950/20">
                                 <h3 className="font-semibold text-red-700 dark:text-red-400 flex items-center gap-2">
-                                    <XCircle className="w-5 h-5" /> {ko ? '실패한 테스트' : 'Failed Tests'} ({FAILED.length})
+                                    <XCircle className="w-5 h-5" /> {t('test.failedTests')} ({FAILED.length})
                                 </h3>
                             </div>
                             <div className="divide-y divide-red-100 dark:divide-red-900/20">
@@ -182,7 +181,7 @@ export default function TestDashboardView({ projectId }: { projectId: string }) 
                                             <span className="font-medium text-slate-800 dark:text-slate-200 text-sm">{f.name}</span>
                                             <span className="text-xs text-slate-400">{f.suite}</span>
                                             {f.aiGenerated && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400"><Bot className="w-3 h-3" /> AI</span>}
-                                            {f.reviewRequired && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">⚠️ {ko ? '검토 필요' : 'Review'}</span>}
+                                            {f.reviewRequired && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">⚠️ {t('reviewRequiredShort')}</span>}
                                         </div>
                                         <code className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 px-2 py-1 rounded">{f.error}</code>
                                     </div>
@@ -195,7 +194,7 @@ export default function TestDashboardView({ projectId }: { projectId: string }) 
 
             <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 text-xs text-slate-500">
                 <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-                {ko ? 'MCP를 통해 수집된 실제 데이터가 표시됩니다.' : 'Showing live data tracked via MCP.'}
+                {t('mcpLiveData')}
             </div>
         </div>
     );
