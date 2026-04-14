@@ -9,11 +9,12 @@ const PHASE_LABELS: Record<string, string> = {
 };
 
 export default function PhaseProgressStrip({ phases }: { phases?: PhaseProgress[] }) {
-    if (!phases || phases.length === 0) return null;
+    const active = (phases ?? []).filter(p => p.total > 0);
+    if (active.length === 0) return null;
     return (
         <div className="flex items-stretch gap-1 h-5" aria-label="Phase progress">
-            {phases.map((p) => {
-                const pct = p.total > 0 ? Math.round((p.done / p.total) * 100) : 0;
+            {active.map((p) => {
+                const pct = Math.round((p.done / p.total) * 100);
                 return (
                     <div
                         key={p.phase}

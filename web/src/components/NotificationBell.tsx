@@ -25,13 +25,15 @@ export default function NotificationBell() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(false);
 
+    const accessToken = (session as any)?.accessToken as string | undefined;
+
     const fetchNotifications = async () => {
-        if (!session) return;
+        if (!accessToken) return;
         setLoading(true);
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3333/api/v1'}/notifications`, {
                 headers: {
-                    'Authorization': `Bearer ${(session as any).accessToken}`
+                    'Authorization': `Bearer ${accessToken}`
                 }
             });
             if (res.ok) {
@@ -46,26 +48,24 @@ export default function NotificationBell() {
     };
 
     useEffect(() => {
-        if (session) {
-            fetchNotifications();
+        if (!accessToken) return;
+        fetchNotifications();
 
-            const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3333';
-            const socket = io(SOCKET_URL, { transports: ['websocket'] });
+        const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3333';
+        const socket = io(SOCKET_URL, { transports: ['websocket'] });
 
-            socket.on('connect', () => {
-                if ((session as any).dbUser?.id) {
-                    socket.emit('joinUserNotifications', { userId: (session as any).dbUser.id });
-                }
-            });
+        socket.on('connect', () => {
+            if ((session as any)?.dbUser?.id) {
+                socket.emit('joinUserNotifications', { userId: (session as any).dbUser.id });
+            }
+        });
 
-            socket.on('notification', (newNotif: Notification) => {
-                setNotifications(prev => [newNotif, ...prev]);
-                // Play sound or show toast
-            });
+        socket.on('notification', (newNotif: Notification) => {
+            setNotifications(prev => [newNotif, ...prev]);
+        });
 
-            return () => { socket.disconnect(); };
-        }
-    }, [session]);
+        return () => { socket.disconnect(); };
+    }, [accessToken]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -83,11 +83,11 @@ export default function NotificationBell() {
     }, [isOpen]);
 
     const markAsRead = async (id: string) => {
-        if (!session) return;
+        if (!accessToken) return;
         try {
             await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3333/api/v1'}/notifications/${id}/read`, {
                 method: 'PATCH',
-                headers: { 'Authorization': `Bearer ${(session as any).accessToken}` }
+                headers: { 'Authorization': `Bearer ${accessToken}` }
             });
             setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
         } catch (e) {
@@ -96,11 +96,11 @@ export default function NotificationBell() {
     };
 
     const markAllAsRead = async () => {
-        if (!session) return;
+        if (!accessToken) return;
         try {
             await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3333/api/v1'}/notifications/read-all`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${(session as any).accessToken}` }
+                headers: { 'Authorization': `Bearer ${accessToken}` }
             });
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
         } catch (e) {

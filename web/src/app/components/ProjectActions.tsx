@@ -68,8 +68,13 @@ export default function ProjectActions({ project }: ProjectActionsProps) {
 
     const stopPropagation = (e: React.MouseEvent) => e.preventDefault();
 
+    const isAnyModalOpen = isEditOpen || isDeleteOpen;
+
     return (
-        <div className="absolute top-4 right-4 z-20 flex gap-2" onClick={stopPropagation}>
+        <div
+            className={`absolute top-4 right-4 z-20 flex gap-2 transition-opacity duration-200 ${isAnyModalOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'}`}
+            onClick={stopPropagation}
+        >
             <button
                 onClick={(e) => {
                     e.preventDefault();

@@ -148,7 +148,7 @@ const translations: Translations = {
     'project': { en: 'Project', ko: '프로젝트', zh: '项目', ja: 'プロジェクト' },
     'projects': { en: 'Projects', ko: '프로젝트', zh: '项目', ja: 'プロジェクト' },
     'noProjectsFound': { en: 'No Projects Found', ko: '프로젝트를 찾을 수 없습니다', zh: '未找到项目', ja: 'プロジェクトが見つかりません' },
-    'getStartedByCreatingProject': { en: 'Get started by creating a project via the MCP tool from your AI assistant.', ko: 'AI 어시스턴트의 MCP 도구를 통해 프로젝트를 생성하여 시작하세요.', zh: '通过 AI 助手的 MCP 工具创建项目以开始。', ja: 'AI アシスタントの MCP ツールでプロジェクトを作成して始めましょう。' },
+    'getStartedByCreatingProject': { en: 'Click "Create Project" above or ask your AI assistant to create one via the MCP tool.', ko: '위 "Create Project" 버튼을 누르거나, AI 어시스턴트에게 MCP 도구로 생성을 요청하세요.', zh: '点击上方 "Create Project" 按钮,或通过 AI 助手的 MCP 工具创建。', ja: '上の "Create Project" ボタンを押すか、AI アシスタントの MCP ツールで作成を依頼してください。' },
     'noDescriptionProvided': { en: 'No description provided.', ko: '설명이 제공되지 않았습니다.', zh: '未提供说明。', ja: '説明はありません。' },
 
     // Admin & Settings Pages

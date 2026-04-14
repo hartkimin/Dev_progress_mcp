@@ -43,6 +43,7 @@ import { LanguageProvider } from "@/lib/i18n";
 import { AuthProvider } from "@/components/AuthProvider";
 import SyncAuth from "@/components/SyncAuth";
 import AiSidebar from "@/components/AiSidebar";
+import CommandPalette from "@/components/CommandPalette";
 import { listProjects } from "@/lib/db";
 
 export default async function RootLayout({
@@ -71,18 +72,17 @@ export default async function RootLayout({
             <LanguageProvider>
               <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans selection:bg-indigo-500/30 transition-colors duration-300">
                 <Sidebar projects={sidebarProjects} />
+                <CommandPalette projects={sidebarProjects} />
                 <div className="flex-1 overflow-y-auto w-full h-full relative flex flex-col">
                   <TopNav />
                   <div className="flex-1">
                     {children}
                   </div>
-                  <footer className="p-6 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500">
-                    <div className="flex justify-center gap-6 mb-2">
-                      <a href="/terms" className="hover:text-indigo-500 transition-colors">Terms</a>
-                      <a href="/privacy" className="hover:text-indigo-500 transition-colors">Privacy</a>
-                      <a href="mailto:support@vibeplanner.io" className="hover:text-indigo-500 transition-colors">Support</a>
-                    </div>
-                    <p>© 2026 VibePlanner Inc. All rights reserved.</p>
+                  <footer className="px-6 py-3 border-t border-slate-200 dark:border-slate-800 text-center text-[11px] text-slate-400 dark:text-slate-500 flex flex-wrap items-center justify-center gap-3">
+                    <span>VibePlanner · self-hosted</span>
+                    <span className="text-slate-300 dark:text-slate-700">·</span>
+                    <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[10px]">⌘K</kbd>
+                    <span>quick nav</span>
                   </footer>
                 </div>
               </div>
