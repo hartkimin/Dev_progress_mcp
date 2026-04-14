@@ -71,7 +71,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             {
                 name: "create_task",
-                description: "프로젝트에 새 태스크를 추가합니다.",
+                description: "프로젝트에 새 태스크를 추가합니다. **상세 내용(description)이 반드시 필요합니다** — 배경/목표/범위 등 실제 내용을 작성하세요. 빈 값이나 템플릿 뼈대만으로는 거부됩니다.",
                 inputSchema: {
                     type: "object",
                     properties: {
@@ -101,7 +101,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         },
                         description: {
                             type: "string",
-                            description: "태스크의 설명입니다.",
+                            description: "태스크의 상세 설명(필수). 마크다운 허용. 배경/목표/범위/제약/참고 등 실제 내용을 작성하세요. 공백/주석만으로는 거부됩니다. 예: '## 배경\\n...\\n## 목표\\n...'",
                         },
                         status: {
                             type: "string",
@@ -118,7 +118,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                             description: "달력 뷰에 유용한 태스크의 선택적 마감 날짜/시간(ISO 8601 문자열)입니다.",
                         },
                     },
-                    required: ["projectId", "title"],
+                    required: ["projectId", "title", "description"],
                 },
             },
             {
@@ -825,9 +825,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
 
             case "create_task": {
-                const { projectId, title, category = "", phase = "", taskType = "", scale = "", description = "", status = "TODO", startDate = null, dueDate = null } = args as Record<string, any>;
-                const resolvedDescription = isTemplateEmpty(description) ? TASK_DESCRIPTION_TEMPLATE : description;
-                const id = await db.createTask(projectId, title, category, phase, taskType, scale, resolvedDescription, status, startDate, dueDate);
+                const { projectId, title, category = "", phase = "", taskType = "", scale = "", description, status = "TODO", startDate = null, dueDate = null } = args as Record<string, any>;
+                if (typeof title !== 'string' || !title.trim()) {
+                    throw new McpError(ErrorCode.InvalidParams, `태스크 생성에는 제목(title)이 필요합니다.`);
+                }
+                if (typeof description !== 'string' || isTemplateEmpty(description)) {
+                    throw new McpError(
+                        ErrorCode.InvalidParams,
+                        `태스크 생성 시 상세 설명(description)이 반드시 필요합니다. 빈 값, 공백, 주석, 또는 템플릿 뼈대만으로는 거부됩니다. 배경/목표/범위 등 실제 내용을 작성해서 다시 호출하세요.`
+                    );
+                }
+                const id = await db.createTask(projectId, title, category, phase, taskType, scale, description, status, startDate, dueDate);
                 return {
                     content: [{ type: "text", text: `Task created successfully with ID: ${id}` }],
                 };
