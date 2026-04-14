@@ -35,6 +35,12 @@ export class AnalyticsController {
         return this.analyticsService.getAllProjectSummaries(userId);
     }
 
+    @Get('strategy-readiness')
+    @ApiOperation({ summary: '현재 사용자의 전략 준비도 (YC + Plan Review 집계)' })
+    getStrategyReadiness(@GetUser('id') userId: string) {
+        return this.analyticsService.getStrategyReadiness(userId);
+    }
+
     @Get('phase-breakdown')
     @ApiOperation({ summary: 'Vibe Coding 5단계 Phase별 상세 분석' })
     @ApiQuery({ name: 'projectId', required: true, type: String })
