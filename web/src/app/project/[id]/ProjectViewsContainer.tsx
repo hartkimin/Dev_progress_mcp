@@ -77,28 +77,30 @@ export default function ProjectViewsContainer({
     const [view, setView] = useState<ViewType>(initialView);
     const { t } = useTranslation();
 
+    // Tab order is optimized for the developer's day-to-day flow.
+    // Within each group, tabs descend from "acted on most often" → "referenced occasionally".
     const tabs: { key: ViewType; label: string; icon: React.ReactNode; category: CategoryKey }[] = [
-        // 🏠 Overview (cross-cutting)
+        // 🏠 Overview — task views → progress views → knowledge
         { key: 'kanban',        label: t('tabKanban'),       icon: <LayoutDashboard className="w-4 h-4" />, category: 'overview' },
         { key: 'calendar',      label: t('tabCalendar'),     icon: <Calendar className="w-4 h-4" />,        category: 'overview' },
         { key: 'kpi',           label: 'KPI',                icon: <BarChart3 className="w-4 h-4" />,       category: 'overview' },
         { key: 'phase_tracker', label: 'Phases',             icon: <Workflow className="w-4 h-4" />,        category: 'overview' },
-        { key: 'ai_context',    label: t('tabAIContext'),    icon: <Brain className="w-4 h-4" />,           category: 'overview' },
         { key: 'decision',      label: t('tabDecision'),     icon: <Lightbulb className="w-4 h-4" />,       category: 'overview' },
-        // 💡 Ideation
+        { key: 'ai_context',    label: t('tabAIContext'),    icon: <Brain className="w-4 h-4" />,           category: 'overview' },
+        // 💡 Ideation — define the problem → review the plan
         { key: 'yc_questions',    label: t('tabYcQuestions'),   icon: <Sparkles className="w-4 h-4" />,      category: 'ideation' },
         { key: 'plan_review_hub', label: t('tabPlanReviewHub'), icon: <ClipboardList className="w-4 h-4" />, category: 'ideation' },
-        // 🏗️ Design
+        // 🏗️ Design — system → data → interface (descending abstraction)
         { key: 'architecture',  label: t('tabArchitecture'), icon: <Box className="w-4 h-4" />,             category: 'design' },
         { key: 'database',      label: t('tabDatabase'),     icon: <Database className="w-4 h-4" />,        category: 'design' },
         { key: 'api_spec',      label: t('tabApiSpec'),      icon: <FileJson className="w-4 h-4" />,        category: 'design' },
-        // 🔨 Build
-        { key: 'code_review',   label: t('tabCodeReview'),   icon: <GitPullRequest className="w-4 h-4" />,  category: 'build' },
+        // 🔨 Build — set up environment first, then review the code that ships
         { key: 'environment',   label: t('tabEnvironment'),  icon: <Server className="w-4 h-4" />,          category: 'build' },
-        // 🧪 QA
+        { key: 'code_review',   label: t('tabCodeReview'),   icon: <GitPullRequest className="w-4 h-4" />,  category: 'build' },
+        // 🧪 QA — proactive tests → reactive bug tracking
         { key: 'test',          label: t('tabTest'),         icon: <TestTube2 className="w-4 h-4" />,       category: 'qa' },
         { key: 'issue_tracker', label: t('tabIssueTracker'), icon: <Bug className="w-4 h-4" />,             category: 'qa' },
-        // 🚀 Deploy
+        // 🚀 Deploy — ship the release → record what shipped
         { key: 'deploy',        label: t('tabDeploy'),       icon: <Rocket className="w-4 h-4" />,          category: 'deploy' },
         { key: 'changelog',     label: t('tabChangelog'),    icon: <FileText className="w-4 h-4" />,        category: 'deploy' },
     ];
