@@ -45,25 +45,27 @@ export default async function ProjectBoard({ params }: { params: Promise<{ id: s
             {/* Realtime component injection */}
             <AutoRefresh projectId={id} />
 
-            <div className="w-full flex flex-col items-start gap-8">
-                {/* Header */}
-                <header className="relative z-50 w-full mb-2 pb-6 border-b border-slate-200 dark:border-slate-800/80 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <div className="flex-1">
-                        <Link href="/" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors mb-4 group">
-                            <svg className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
-                            Back to Projects
-                        </Link>
-                        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                            {project.name}
-                        </h1>
-                        {project.description && (
-                            <p className="mt-2 text-slate-600 dark:text-slate-400 max-w-3xl">
-                                {project.description}
-                            </p>
-                        )}
-                    </div>
+            <div className="w-full flex flex-col items-start gap-4">
+                {/* Compact header — single row: back chevron + title + description */}
+                <header className="relative z-50 w-full flex items-baseline gap-3 flex-wrap">
+                    <Link
+                        href="/"
+                        className="inline-flex items-center justify-center w-6 h-6 rounded-md text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors"
+                        aria-label="Back to Projects"
+                        title="Back to Projects"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </Link>
+                    <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
+                        {project.name}
+                    </h1>
+                    {project.description && (
+                        <p className="text-sm text-slate-500 dark:text-slate-400 truncate max-w-2xl">
+                            {project.description}
+                        </p>
+                    )}
                 </header>
 
                 <div className="w-full">

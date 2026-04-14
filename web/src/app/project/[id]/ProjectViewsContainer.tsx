@@ -105,8 +105,17 @@ export default function ProjectViewsContainer({
 
     const getCategoryConfig = (catKey: CategoryKey) => CATEGORIES.find(c => c.key === catKey)!;
     const activeCategory = tabs.find(tab => tab.key === view)?.category || 'overview';
+    const activeCategoryTabs = tabs.filter(t => t.category === activeCategory);
 
-    const renderTab = (tab: typeof tabs[0]) => {
+    const selectGroup = (catKey: CategoryKey) => {
+        const firstTab = tabs.find(t => t.category === catKey);
+        if (firstTab) setView(firstTab.key);
+    };
+
+    const groupLabel = (cat: CategoryKey) =>
+        t(`navGroup${cat.charAt(0).toUpperCase() + cat.slice(1)}`);
+
+    const renderSubTab = (tab: typeof tabs[0]) => {
         const cat = getCategoryConfig(tab.category);
         const isActive = view === tab.key;
         return (
@@ -125,21 +134,34 @@ export default function ProjectViewsContainer({
     };
 
     return (
-        <div className="w-full flex flex-col gap-6">
-            <div className="flex items-center justify-end w-full overflow-x-auto">
-                <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg gap-0">
-                    {CATEGORIES.map((cat, catIdx) => {
-                        const catTabs = tabs.filter(t => t.category === cat.key);
+        <div className="w-full flex flex-col gap-3">
+            {/* Tier 1 — group pills */}
+            <div className="flex items-center w-full overflow-x-auto">
+                <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg gap-1">
+                    {CATEGORIES.map((cat) => {
+                        const isActive = activeCategory === cat.key;
                         return (
-                            <React.Fragment key={cat.key}>
-                                {catIdx > 0 && <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 shrink-0"></div>}
-                                <span className="text-xs px-1 shrink-0 select-none" title={t(`navGroup${cat.key.charAt(0).toUpperCase() + cat.key.slice(1)}`)}>
-                                    {cat.emoji}
-                                </span>
-                                {catTabs.map(renderTab)}
-                            </React.Fragment>
+                            <button
+                                key={cat.key}
+                                onClick={() => selectGroup(cat.key)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${
+                                    isActive
+                                        ? `bg-white dark:bg-slate-700 ${cat.activeColor} shadow-sm`
+                                        : `text-slate-600 dark:text-slate-400 ${cat.hoverBg}`
+                                }`}
+                            >
+                                <span aria-hidden="true">{cat.emoji}</span>
+                                <span>{groupLabel(cat.key)}</span>
+                            </button>
                         );
                     })}
+                </div>
+            </div>
+
+            {/* Tier 2 — tabs of the active group */}
+            <div className="flex items-center w-full overflow-x-auto">
+                <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800 w-full">
+                    {activeCategoryTabs.map(renderSubTab)}
                 </div>
             </div>
 
