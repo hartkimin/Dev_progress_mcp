@@ -20,14 +20,14 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
 
         setIsCreating(true);
         try {
-            await createUser(newName, newEmail);
-            // In a real app, we would also pass the newRole to the API
-            setNewName('');
-            setNewEmail('');
-            setNewRole('MEMBER');
-        } catch (error) {
-            console.error(t('failedToCreateUser'), error);
-            alert(error instanceof Error ? error.message : t('failedToCreateUser'));
+            const result = await createUser(newName, newEmail);
+            if (result.ok) {
+                setNewName('');
+                setNewEmail('');
+                setNewRole('MEMBER');
+            } else {
+                alert(result.error);
+            }
         } finally {
             setIsCreating(false);
         }
