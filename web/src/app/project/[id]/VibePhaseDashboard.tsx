@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { getPhaseBreakdown } from '@/lib/db';
 import type { PhaseBreakdownItem } from '@/lib/db';
 import { CheckCircle2, Clock, Loader2, Lightbulb, PenTool, Code2, TestTube2, Rocket } from 'lucide-react';
-import YCQuestionsCard from './planReview/YCQuestionsCard';
 import PlanReviewBadges from './planReview/PlanReviewBadges';
 
 const PHASE_CONFIG: { name: string; icon: React.ReactNode; color: string; gradient: string; emoji: string }[] = [
@@ -150,8 +149,6 @@ export default function VibePhaseDashboard({ projectId }: { projectId: string })
                                 </div>
                             </div>
                         </div>
-                        {/* YC Questions Card — mounted after Phase 1 (Ideation & Requirements) */}
-                        {idx === 0 && <YCQuestionsCard projectId={projectId} />}
                         </React.Fragment>
                     );
                 })}
