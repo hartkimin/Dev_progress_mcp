@@ -28,6 +28,26 @@ export class UpdateTaskDetailsDto {
     @IsString()
     afterWork?: string;
 
+    @ApiPropertyOptional({ description: 'TODO 상태 수행 내역' })
+    @IsOptional()
+    @IsString()
+    workTodo?: string;
+
+    @ApiPropertyOptional({ description: 'IN_PROGRESS 상태 수행 내역' })
+    @IsOptional()
+    @IsString()
+    workInProgress?: string;
+
+    @ApiPropertyOptional({ description: 'REVIEW 상태 수행 내역' })
+    @IsOptional()
+    @IsString()
+    workReview?: string;
+
+    @ApiPropertyOptional({ description: 'DONE 상태 수행 내역' })
+    @IsOptional()
+    @IsString()
+    workDone?: string;
+
     @ApiPropertyOptional({ description: 'Vibe Coding 페이즈' })
     @IsOptional()
     @IsString()

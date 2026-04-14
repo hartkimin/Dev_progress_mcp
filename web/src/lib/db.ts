@@ -88,10 +88,15 @@ export interface Task {
     description: string;
     before_work?: string;
     after_work?: string;
+    work_todo?: string;
+    work_in_progress?: string;
+    work_review?: string;
+    work_done?: string;
     status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
     start_date?: string | null;
     due_date?: string | null;
     started_at?: string | null;
+    review_at?: string | null;
     completed_at?: string | null;
     created_at: string;
     updated_at: string;
@@ -230,6 +235,28 @@ export async function updateTaskDetails(taskId: string, description: string, bef
     await fetchApi(`/tasks/${taskId}/details`, {
         method: 'PATCH',
         body: JSON.stringify({ description, beforeWork, afterWork, phase, taskType, scale })
+    });
+    return true;
+}
+
+export interface TaskStatusHistoryEntry {
+    id: string;
+    task_id: string;
+    from_status: string | null;
+    to_status: string;
+    note: string | null;
+    changed_at: string;
+    changed_by: string | null;
+}
+
+export async function getTaskStatusHistory(taskId: string): Promise<TaskStatusHistoryEntry[]> {
+    return await fetchApi(`/tasks/${taskId}/history`);
+}
+
+export async function updateTaskWorkByStatus(taskId: string, patch: Partial<{ workTodo: string; workInProgress: string; workReview: string; workDone: string }>): Promise<boolean> {
+    await fetchApi(`/tasks/${taskId}/details`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch)
     });
     return true;
 }
@@ -497,6 +524,11 @@ export async function listPlanReviews(projectId: string, kind?: string): Promise
 
 export async function getPlanReview(id: string): Promise<PlanReview | null> {
     return await fetchApi(`/plan-reviews/${id}`);
+}
+
+export async function getPlanReviewMarkdown(id: string): Promise<string | null> {
+    const res = await fetchApi(`/plan-reviews/${id}/markdown`);
+    return res?.content ?? null;
 }
 
 export interface StrategyReadinessProject {

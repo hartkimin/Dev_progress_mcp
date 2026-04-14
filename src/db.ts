@@ -148,6 +148,14 @@ export async function updateTaskStatus(taskId: string, status: string, updatedBy
     return true;
 }
 
+export async function updateTaskWorkFields(taskId: string, fields: { workTodo?: string; workInProgress?: string; workReview?: string; workDone?: string }): Promise<boolean> {
+    await fetchApi(`/tasks/${taskId}/details`, {
+        method: 'PATCH',
+        body: JSON.stringify(fields)
+    });
+    return true;
+}
+
 export async function updateTaskDetails(taskId: string, description: string, beforeWork: string, afterWork: string, phase: string, taskType: string, scale: string, updatedBy: string = 'Unknown', startDate?: string | null, dueDate?: string | null): Promise<boolean> {
     await fetchApi(`/tasks/${taskId}/details`, {
         method: 'PATCH',

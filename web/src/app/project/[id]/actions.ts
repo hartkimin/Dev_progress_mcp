@@ -1,6 +1,6 @@
 'use server';
 
-import { updateTaskStatus, updateTaskDetails, getCommentsActionDb, addCommentActionDb, getTaskById, updateTaskPhaseAndStatusDb, createTaskDb, setTaskAiProcessing, deleteTaskDb } from '@/lib/db';
+import { updateTaskStatus, updateTaskDetails, getCommentsActionDb, addCommentActionDb, getTaskById, updateTaskPhaseAndStatusDb, createTaskDb, setTaskAiProcessing, deleteTaskDb, getTaskStatusHistory, updateTaskWorkByStatus } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 export async function setTaskStatus(projectId: string, taskId: string, status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE') {
@@ -32,6 +32,16 @@ export async function addCommentAction(taskId: string, author: string, content: 
 
 export async function syncTaskFromDb(taskId: string) {
     return await getTaskById(taskId);
+}
+
+export async function getTaskHistoryAction(taskId: string) {
+    return await getTaskStatusHistory(taskId);
+}
+
+export async function saveTaskWorkByStatus(projectId: string, taskId: string, patch: { workTodo?: string; workInProgress?: string; workReview?: string; workDone?: string }) {
+    await updateTaskWorkByStatus(taskId, patch);
+    revalidatePath(`/project/${projectId}`);
+    return { success: true };
 }
 
 export async function createTaskAction(projectId: string, title: string, taskType: string = '') {

@@ -442,7 +442,7 @@ export default function IntegrationsPage() {
                                                                                         <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">optional</span>
                                                                                     )}
                                                                                 </td>
-                                                                                <td className="py-2 text-slate-600 dark:text-slate-400">{p.desc[language as 'en' | 'ko']}</td>
+                                                                                <td className="py-2 text-slate-600 dark:text-slate-400">{p.desc[language === 'ko' ? 'ko' : 'en']}</td>
                                                                             </tr>
                                                                         ))}
                                                                     </tbody>

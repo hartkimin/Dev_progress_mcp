@@ -27,6 +27,12 @@ export class TasksController {
         return this.tasksService.findOne(id);
     }
 
+    @Get(':id/history')
+    @ApiOperation({ summary: '태스크 상태 전이 이력 조회' })
+    getHistory(@Param('id') id: string) {
+        return this.tasksService.getStatusHistory(id);
+    }
+
     @Patch(':id/status')
     @ApiOperation({ summary: '태스크 상태 업데이트 (Validation 포함)' })
     updateStatus(@Param('id') id: string, @Body() updateDto: UpdateTaskStatusDto) {

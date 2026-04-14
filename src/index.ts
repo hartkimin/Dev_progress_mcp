@@ -11,6 +11,13 @@ import {
     ErrorCode,
 } from "@modelcontextprotocol/sdk/types.js";
 import * as db from './db.js';
+import {
+    TASK_DESCRIPTION_TEMPLATE,
+    TASK_AFTER_WORK_TEMPLATE,
+    WORK_TEMPLATES,
+    WORK_FIELD_KEY,
+    isTemplateEmpty,
+} from './taskTemplates.js';
 
 const server = new Server(
     {
@@ -115,7 +122,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             {
                 name: "update_task_status",
-                description: "칸반 보드에서 태스크를 이동합니다 (상태 업데이트).",
+                description: "칸반 보드에서 태스크를 이동합니다 (상태 업데이트). 전이 시 '현재 단계(FROM)에서 수행한 내역'을 workSummary로 반드시 기록해야 합니다. 템플릿 뼈대만 남은 값이면 거부됩니다.",
                 inputSchema: {
                     type: "object",
                     properties: {
@@ -128,13 +135,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                             description: "태스크의 새로운 상태입니다.",
                             enum: ["TODO", "IN_PROGRESS", "REVIEW", "DONE"],
                         },
+                        workSummary: {
+                            type: "string",
+                            description: "현재(FROM) 단계에서 수행한 작업의 상세 내역. 마크다운 허용. 주석/공백만으로는 거부됨. 예: '조사 및 분석 결과, 접근 방식, 커밋/PR 링크, 만난 이슈와 대응' 등 실제 내용을 작성하세요. 이 값은 떠나는 단계의 work 필드(workTodo/workInProgress/workReview/workDone)에 저장됩니다.",
+                        },
                     },
-                    required: ["taskId", "status"],
+                    required: ["taskId", "status", "workSummary"],
                 },
             },
             {
                 name: "update_task_details",
-                description: "태스크의 상세 설명, 작업 전 내용 및 작업 후 내용을 업데이트합니다.",
+                description: "태스크의 상세 설명, 작업 전/후 내용, 그리고 각 상태별(TODO/IN_PROGRESS/REVIEW/DONE) 수행 내역을 업데이트합니다. 단계별 work 필드는 해당 단계에서 실제 수행한 내역을 직접 편집할 때 사용하세요.",
                 inputSchema: {
                     type: "object",
                     properties: {
@@ -153,6 +164,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         afterWork: {
                             type: "string",
                             description: "After Work Content (작업 후 내용). 작업 완료 후의 결과물 또는 성과입니다.",
+                        },
+                        workTodo: {
+                            type: "string",
+                            description: "TODO 단계 수행 내역(작업 준비: 문제 정의, 조사, 접근 방식, 의존성, 리스크).",
+                        },
+                        workInProgress: {
+                            type: "string",
+                            description: "IN_PROGRESS 단계 수행 내역(구현 및 수행: 주요 변경, 커밋/PR, 테스트/로그, 이슈 대응).",
+                        },
+                        workReview: {
+                            type: "string",
+                            description: "REVIEW 단계 수행 내역(검토: 자체 점검, 리뷰어 피드백, 반영, 논의).",
+                        },
+                        workDone: {
+                            type: "string",
+                            description: "DONE 단계 수행 내역(마무리: 최종 산출물, 성과, 회고, 후속 작업).",
                         },
                         phase: {
                             type: "string",
@@ -759,31 +786,60 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
             case "create_task": {
                 const { projectId, title, category = "", phase = "", taskType = "", scale = "", description = "", status = "TODO", startDate = null, dueDate = null } = args as Record<string, any>;
-                const id = await db.createTask(projectId, title, category, phase, taskType, scale, description, status, startDate, dueDate);
+                const resolvedDescription = isTemplateEmpty(description) ? TASK_DESCRIPTION_TEMPLATE : description;
+                const id = await db.createTask(projectId, title, category, phase, taskType, scale, resolvedDescription, status, startDate, dueDate);
                 return {
                     content: [{ type: "text", text: `Task created successfully with ID: ${id}` }],
                 };
             }
 
             case "update_task_status": {
-                const { taskId, status } = args as Record<string, any>;
+                const { taskId, status, workSummary } = args as Record<string, any>;
+                if (typeof workSummary !== 'string' || isTemplateEmpty(workSummary)) {
+                    throw new McpError(
+                        ErrorCode.InvalidParams,
+                        `update_task_status에는 현재 단계(FROM)에서 수행한 내역을 담은 workSummary가 필요합니다. 빈 값이나 템플릿 뼈대만으로는 상태 전이가 허용되지 않습니다. 실제 수행 내역(조사·구현·커밋·리뷰·회고 등)을 작성 후 다시 호출하세요.`
+                    );
+                }
+                const currentTask = await db.getTaskById(taskId);
+                if (!currentTask) {
+                    throw new McpError(ErrorCode.InvalidParams, `Task with ID ${taskId} not found.`);
+                }
+                const fromStatus = currentTask.status as 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+                const fromKey = WORK_FIELD_KEY[fromStatus] ?? 'workTodo';
+                // 1) FROM 단계 work 필드에 workSummary 저장
+                await db.updateTaskWorkFields(taskId, { [fromKey]: workSummary });
+                // 2) 상태 전이
                 const updated = await db.updateTaskStatus(taskId, status, 'MCP Server');
                 if (!updated) {
-                    throw new McpError(ErrorCode.InvalidParams, `Task with ID ${taskId} not found or update failed.`);
+                    throw new McpError(ErrorCode.InvalidParams, `Task with ID ${taskId} status update failed.`);
                 }
                 return {
-                    content: [{ type: "text", text: `Task ${taskId} status updated to ${status}.` }],
+                    content: [{ type: "text", text: `Task ${taskId}: ${fromStatus} 단계 수행 내역을 ${fromKey}에 기록하고 상태를 ${status}로 전이했습니다.` }],
                 };
             }
 
             case "update_task_details": {
-                const { taskId, description = "", beforeWork = "", afterWork = "", phase = "", taskType = "", scale = "", startDate, dueDate } = args as Record<string, any>;
-                const updated = await db.updateTaskDetails(taskId, description, beforeWork, afterWork, phase, taskType, scale, 'MCP Server', startDate, dueDate);
+                const { taskId, description = "", beforeWork = "", afterWork = "", phase = "", taskType = "", scale = "", startDate, dueDate, workTodo, workInProgress, workReview, workDone } = args as Record<string, any>;
+                const resolvedDescription = isTemplateEmpty(description) ? TASK_DESCRIPTION_TEMPLATE : description;
+                const resolvedAfterWork = isTemplateEmpty(afterWork) ? TASK_AFTER_WORK_TEMPLATE : afterWork;
+                const updated = await db.updateTaskDetails(taskId, resolvedDescription, beforeWork, resolvedAfterWork, phase, taskType, scale, 'MCP Server', startDate, dueDate);
                 if (!updated) {
                     throw new McpError(ErrorCode.InvalidParams, `Task with ID ${taskId} not found or update failed.`);
                 }
+                // 단계별 work 필드가 전달되었으면 개별 PATCH로 덮어쓰기
+                const workPatch: Record<string, string> = {};
+                if (typeof workTodo === 'string' && !isTemplateEmpty(workTodo)) workPatch.workTodo = workTodo;
+                if (typeof workInProgress === 'string' && !isTemplateEmpty(workInProgress)) workPatch.workInProgress = workInProgress;
+                if (typeof workReview === 'string' && !isTemplateEmpty(workReview)) workPatch.workReview = workReview;
+                if (typeof workDone === 'string' && !isTemplateEmpty(workDone)) workPatch.workDone = workDone;
+                if (Object.keys(workPatch).length > 0) {
+                    await db.updateTaskWorkFields(taskId, workPatch);
+                }
+                const workKeys = Object.keys(workPatch);
+                const workNote = workKeys.length > 0 ? ` (단계별 기록: ${workKeys.join(', ')})` : '';
                 return {
-                    content: [{ type: "text", text: `Task ${taskId} details updated successfully.` }],
+                    content: [{ type: "text", text: `Task ${taskId} details updated successfully.${workNote}` }],
                 };
             }
 

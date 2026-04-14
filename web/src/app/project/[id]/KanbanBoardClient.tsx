@@ -4,10 +4,30 @@ import React, { useState, useEffect, useTransition } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Task } from '@/lib/db';
 import { X, Calendar, Tag, Hash, Activity, Clock, Loader2, Edit2, Save, MessageSquare, CheckCircle2, Sparkles, AlertCircle, Info, ChevronDown, ChevronUp, Target, BookOpen, Copy, Check, Trash2 } from 'lucide-react';
-import { setTaskStatus, saveTaskDetails, syncTaskFromDb, createTaskAction, deleteTaskAction } from './actions';
+import { setTaskStatus, saveTaskDetails, syncTaskFromDb, createTaskAction, deleteTaskAction, getTaskHistoryAction, saveTaskWorkByStatus } from './actions';
 import { TaskComments } from './TaskComments';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import type { TaskStatusHistoryEntry } from '@/lib/db';
+import {
+    TASK_DESCRIPTION_TEMPLATE,
+    TASK_AFTER_WORK_TEMPLATE,
+    WORK_TEMPLATES,
+    isTemplateEmpty,
+    formatDuration,
+    diffMs,
+} from '@/lib/taskTemplates';
+
+type WorkStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+
+const WORK_STATUSES: WorkStatus[] = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'];
+
+const STATUS_TAB_META: Record<WorkStatus, { label: string; accent: string; bg: string; text: string; ring: string }> = {
+    TODO:        { label: 'TODO',        accent: 'bg-slate-500',   bg: 'bg-slate-50 dark:bg-slate-900/40',       text: 'text-slate-700 dark:text-slate-200',     ring: 'ring-slate-400/40' },
+    IN_PROGRESS: { label: 'IN_PROGRESS', accent: 'bg-blue-500',    bg: 'bg-blue-50/60 dark:bg-blue-900/20',      text: 'text-blue-700 dark:text-blue-300',       ring: 'ring-blue-400/40' },
+    REVIEW:      { label: 'REVIEW',      accent: 'bg-amber-500',   bg: 'bg-amber-50/60 dark:bg-amber-900/20',    text: 'text-amber-700 dark:text-amber-300',     ring: 'ring-amber-400/40' },
+    DONE:        { label: 'DONE',        accent: 'bg-emerald-500', bg: 'bg-emerald-50/60 dark:bg-emerald-900/20',text: 'text-emerald-700 dark:text-emerald-300', ring: 'ring-emerald-400/40' },
+};
 
 interface Phase {
     id: string;
@@ -132,7 +152,9 @@ export default function KanbanBoardClient({
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [selectedTaskDetails, setSelectedTaskDetails] = useState<Task | null>(null);
     const [isEditingDetails, setIsEditingDetails] = useState(false);
-    const [editForm, setEditForm] = useState({ description: '', beforeWork: '', afterWork: '', phase: '', taskType: '', scale: '' });
+    const [editForm, setEditForm] = useState({ description: '', beforeWork: '', afterWork: '', phase: '', taskType: '', scale: '', workTodo: '', workInProgress: '', workReview: '', workDone: '' });
+    const [activeWorkTab, setActiveWorkTab] = useState<WorkStatus>('TODO');
+    const [statusHistory, setStatusHistory] = useState<TaskStatusHistoryEntry[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [isPending, startTransition] = useTransition();
@@ -157,13 +179,29 @@ export default function KanbanBoardClient({
         if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
         const newStatus = destination.droppableId as 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+        const prevStatus = source.droppableId as 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
 
         // Optimistic UI update
         setTasks(prev => prev.map(t => t.id === draggableId ? { ...t, status: newStatus } : t));
 
-        // Server Action
-        startTransition(() => {
-            setTaskStatus(projectId, draggableId, newStatus);
+        // Server Action — 실패 시 롤백 + 토스트
+        startTransition(async () => {
+            try {
+                await setTaskStatus(projectId, draggableId, newStatus);
+                if (selectedTaskDetails?.id === draggableId) {
+                    getTaskHistoryAction(draggableId).then(h => setStatusHistory(h || [])).catch(() => {});
+                    setSelectedTaskDetails(prev => prev ? { ...prev, status: newStatus } : prev);
+                    setActiveWorkTab(newStatus);
+                }
+            } catch (err: any) {
+                // 롤백
+                setTasks(prev => prev.map(t => t.id === draggableId ? { ...t, status: prevStatus } : t));
+                const msg = (err?.message || '').includes('Server Action')
+                    ? '페이지를 새로고침하세요 (배포가 갱신되었습니다).'
+                    : '상태 변경 실패';
+                setSyncResult({ type: 'error', message: msg });
+                setTimeout(() => setSyncResult(null), 4000);
+            }
         });
     };
 
@@ -192,13 +230,20 @@ export default function KanbanBoardClient({
                             if (!snapshot.isDragging) {
                                 setSelectedTaskDetails(task);
                                 setEditForm({
-                                    description: task.description || '',
+                                    description: isTemplateEmpty(task.description) ? TASK_DESCRIPTION_TEMPLATE : task.description || '',
                                     beforeWork: task.before_work || '',
-                                    afterWork: task.after_work || '',
+                                    afterWork: isTemplateEmpty(task.after_work) ? TASK_AFTER_WORK_TEMPLATE : task.after_work || '',
                                     phase: task.phase || '',
                                     taskType: task.task_type || '',
-                                    scale: task.scale || ''
+                                    scale: task.scale || '',
+                                    workTodo: task.work_todo || '',
+                                    workInProgress: task.work_in_progress || '',
+                                    workReview: task.work_review || '',
+                                    workDone: task.work_done || ''
                                 });
+                                setActiveWorkTab(task.status as WorkStatus);
+                                setStatusHistory([]);
+                                getTaskHistoryAction(task.id).then(h => setStatusHistory(h || [])).catch(() => {});
                                 setIsEditingDetails(false);
                             }
                         }}
@@ -498,91 +543,121 @@ export default function KanbanBoardClient({
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 bg-white dark:bg-slate-900">
                                 <div className="flex flex-col gap-6 max-w-3xl pb-10">
 
-                                    {isEditingDetails ? (
-                                        // --- EDIT MODE ---
-                                        <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                            {/* Work Context (Edit) */}
-                                            <div className="flex flex-col gap-3">
-                                                <label className="text-sm font-bold text-amber-700 dark:text-amber-500 flex items-center gap-2">
-                                                    <Activity className="w-4 h-4" />
-                                                    작업 내용
-                                                </label>
-                                                <textarea
-                                                    value={editForm.description}
-                                                    onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                                                    className="w-full min-h-[200px] p-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-900/10 text-slate-700 dark:text-slate-200 focus:bg-amber-50 dark:focus:bg-amber-900/20 focus:ring-2 focus:ring-amber-500/50 outline-none text-[15px] leading-relaxed transition-all placeholder:text-amber-700/30 dark:placeholder:text-amber-500/30 font-sans"
-                                                    placeholder="작업 지시, 컨텍스트, 현재 상태, 코드 참조 및 에러 로그 등..."
-                                                />
-                                            </div>
-
-                                            {/* Resolution (Edit) */}
-                                            <div className="flex flex-col gap-3">
-                                                <label className="text-sm font-bold text-emerald-700 dark:text-emerald-500 flex items-center gap-2">
-                                                    <CheckCircle2 className="w-4 h-4" />
-                                                    작업 결과
-                                                </label>
-                                                <textarea
-                                                    value={editForm.afterWork}
-                                                    onChange={(e) => setEditForm(prev => ({ ...prev, afterWork: e.target.value }))}
-                                                    className="w-full min-h-[200px] p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-900/10 text-slate-700 dark:text-slate-200 focus:bg-emerald-50 dark:focus:bg-emerald-900/20 focus:ring-2 focus:ring-emerald-500/50 outline-none text-[15px] leading-relaxed transition-all placeholder:text-emerald-700/30 dark:placeholder:text-emerald-500/30 font-sans"
-                                                    placeholder="수행된 작업, 해결 방법, 주요 코드 변경점 또는 배포/PR 링크 등..."
-                                                />
-                                            </div>
+                                    {/* Status-Tab Work Log */}
+                                    <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                                <Activity className="w-4 h-4 text-indigo-500" />
+                                                상태별 작업 내용 (탭)
+                                            </h3>
+                                            <span className="text-[11px] font-medium text-slate-400">현재 상태: {selectedTaskDetails.status}</span>
                                         </div>
-                                    ) : (
-                                        // --- VIEW MODE (TICKET TIMELINE) ---
-                                        <div className="relative pl-6 border-l-2 border-slate-200 dark:border-slate-800 flex flex-col gap-10 font-sans mt-2 animate-in fade-in duration-300">
-                                            {/* Work Context Entry */}
-                                            <div className="relative">
-                                                <div className="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-amber-100 dark:bg-amber-900/50 ring-4 ring-white dark:ring-slate-900 flex items-center justify-center">
-                                                    <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                                                </div>
-                                                <div className="flex flex-col gap-3 group">
-                                                    <h3 className="text-sm font-bold text-amber-700 dark:text-amber-500 tracking-wider">작업 내용</h3>
-                                                    {editForm.description ? (
-                                                        <details className="bg-amber-50/50 dark:bg-amber-900/10 p-5 rounded-2xl border border-amber-100 dark:border-amber-900/30 group/details open:bg-amber-50 dark:open:bg-amber-900/20 transition-colors shadow-sm" open>
-                                                            <summary className="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer list-none flex items-center justify-between outline-none">
-                                                                <span className="flex items-center gap-2">작업 내용 펼치기 <span className="text-xs font-normal text-slate-500">({editForm.description.length}자)</span></span>
-                                                                <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center group-open/details:rotate-180 transition-transform">
-                                                                    <svg className="w-4 h-4 text-amber-700 dark:text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                                                                </div>
-                                                            </summary>
-                                                            <div className="mt-4 pt-4 border-t border-amber-200/50 dark:border-amber-800/50 prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed font-sans overflow-auto max-h-[500px] custom-scrollbar">
-                                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{editForm.description}</ReactMarkdown>
-                                                            </div>
-                                                        </details>
-                                                    ) : (
-                                                        <p className="text-sm text-slate-400 italic">설명이 제공되지 않았습니다. <button onClick={() => setIsEditingDetails(true)} className="text-indigo-500 hover:underline">내용 수정</button>을 클릭하여 설명과 컨텍스트를 추가하세요.</p>
-                                                    )}
-                                                </div>
-                                            </div>
 
-                                            {/* Resolution Entry */}
-                                            <div className="relative">
-                                                <div className="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-900/50 ring-4 ring-white dark:ring-slate-900 flex items-center justify-center">
-                                                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                                </div>
-                                                <div className="flex flex-col gap-3 group">
-                                                    <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-500 tracking-wider">작업 결과</h3>
-                                                    {editForm.afterWork ? (
-                                                        <details className="bg-emerald-50/50 dark:bg-emerald-900/10 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 group/details open:bg-emerald-50 dark:open:bg-emerald-900/20 transition-colors shadow-sm" open>
-                                                            <summary className="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer list-none flex items-center justify-between outline-none">
-                                                                <span className="flex items-center gap-2">작업 결과 펼치기 <span className="text-xs font-normal text-slate-500">({editForm.afterWork.length}자)</span></span>
-                                                                <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center group-open/details:rotate-180 transition-transform">
-                                                                    <svg className="w-4 h-4 text-emerald-700 dark:text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                                                                </div>
-                                                            </summary>
-                                                            <div className="mt-4 pt-4 border-t border-emerald-200/50 dark:border-emerald-800/50 prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed font-sans overflow-auto max-h-[500px] custom-scrollbar">
-                                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{editForm.afterWork}</ReactMarkdown>
-                                                            </div>
-                                                        </details>
-                                                    ) : (
-                                                        <p className="text-sm text-slate-400 italic">제공된 작업 결과가 없습니다.</p>
-                                                    )}
-                                                </div>
-                                            </div>
+                                        {/* Tabs header */}
+                                        <div className="flex flex-wrap gap-1 mb-3 p-1 bg-slate-100 dark:bg-slate-800/60 rounded-xl w-fit">
+                                            {WORK_STATUSES.map(s => {
+                                                const active = activeWorkTab === s;
+                                                const meta = STATUS_TAB_META[s];
+                                                const key = s === 'TODO' ? 'workTodo' : s === 'IN_PROGRESS' ? 'workInProgress' : s === 'REVIEW' ? 'workReview' : 'workDone';
+                                                const hasContent = !isTemplateEmpty((editForm as any)[key]);
+                                                const currentStatus = selectedTaskDetails.status as WorkStatus;
+                                                const isCurrent = s === currentStatus;
+                                                const currentIdx = WORK_STATUSES.indexOf(currentStatus);
+                                                const thisIdx = WORK_STATUSES.indexOf(s);
+                                                const isFuture = thisIdx > currentIdx;
+                                                return (
+                                                    <button
+                                                        key={s}
+                                                        onClick={() => setActiveWorkTab(s)}
+                                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${active ? `bg-white dark:bg-slate-900 shadow-sm ring-1 ${meta.ring} ${meta.text}` : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'} ${isFuture && !active ? 'opacity-50' : ''}`}
+                                                    >
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${meta.accent}`} />
+                                                        {meta.label}
+                                                        {isCurrent && (
+                                                            <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${meta.accent} text-white`}>
+                                                                현재
+                                                            </span>
+                                                        )}
+                                                        {hasContent && <span className={`ml-0.5 w-1 h-1 rounded-full ${active ? meta.accent : 'bg-slate-400'}`} />}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
-                                    )}
+
+                                        {/* Prior-stage context (read-only, collapsed) */}
+                                        {(() => {
+                                            const activeIdx = WORK_STATUSES.indexOf(activeWorkTab);
+                                            if (activeIdx === 0) return null;
+                                            const priorStages = WORK_STATUSES.slice(0, activeIdx);
+                                            const stageKey = (s: WorkStatus) =>
+                                                s === 'TODO' ? 'workTodo' : s === 'IN_PROGRESS' ? 'workInProgress' : s === 'REVIEW' ? 'workReview' : 'workDone';
+                                            const nonEmpty = priorStages.filter((s) => !isTemplateEmpty((editForm as any)[stageKey(s)]));
+                                            if (!nonEmpty.length) return null;
+                                            return (
+                                                <div className="mb-3 flex flex-col gap-1.5">
+                                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">이전 단계 기록</p>
+                                                    {nonEmpty.map((s) => {
+                                                        const meta = STATUS_TAB_META[s];
+                                                        const val = (editForm as any)[stageKey(s)] as string;
+                                                        return (
+                                                            <details key={s} className={`rounded-lg border border-slate-200 dark:border-slate-700 ${meta.bg}`}>
+                                                                <summary className="cursor-pointer list-none flex items-center gap-2 px-3 py-2 text-xs font-semibold">
+                                                                    <span className={`w-1.5 h-1.5 rounded-full ${meta.accent}`} />
+                                                                    <span className={meta.text}>{meta.label}</span>
+                                                                    <span className="text-slate-400 ml-1">({val.length}자)</span>
+                                                                    <span className="ml-auto text-slate-400">▸ 펼치기</span>
+                                                                </summary>
+                                                                <div className="px-3 pb-3 prose prose-sm dark:prose-invert max-w-none leading-relaxed overflow-auto max-h-72 custom-scrollbar">
+                                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{val}</ReactMarkdown>
+                                                                </div>
+                                                            </details>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })()}
+
+                                        {/* Tab panel */}
+                                        {(() => {
+                                            const tabKey = activeWorkTab === 'TODO' ? 'workTodo' : activeWorkTab === 'IN_PROGRESS' ? 'workInProgress' : activeWorkTab === 'REVIEW' ? 'workReview' : 'workDone';
+                                            const value = (editForm as any)[tabKey] as string;
+                                            const meta = STATUS_TAB_META[activeWorkTab];
+                                            const setValue = (v: string) => setEditForm(prev => ({ ...prev, [tabKey]: v }));
+                                            const applyTemplate = () => setValue(WORK_TEMPLATES[activeWorkTab]);
+
+                                            if (isEditingDetails) {
+                                                return (
+                                                    <div className="flex flex-col gap-2">
+                                                        <div className="flex items-center justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                                            <span>{meta.label} 단계에서 수행한 상세 내역을 기록하세요</span>
+                                                            <button onClick={applyTemplate} className="text-indigo-600 dark:text-indigo-400 hover:underline">템플릿 삽입</button>
+                                                        </div>
+                                                        <textarea
+                                                            value={value}
+                                                            onChange={(e) => setValue(e.target.value)}
+                                                            onFocus={() => { if (!value) applyTemplate(); }}
+                                                            className={`w-full min-h-[200px] p-4 rounded-xl border border-slate-200 dark:border-slate-700 ${meta.bg} text-slate-700 dark:text-slate-200 focus:ring-2 focus:${meta.ring} outline-none text-[15px] leading-relaxed transition-all font-sans`}
+                                                            placeholder={`${meta.label} 단계 수행 내역 (비워두고 포커스하면 템플릿 자동 삽입)`}
+                                                        />
+                                                    </div>
+                                                );
+                                            }
+                                            if (isTemplateEmpty(value)) {
+                                                return (
+                                                    <div className={`p-5 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 ${meta.bg}`}>
+                                                        <p className="text-sm text-slate-500 dark:text-slate-400 italic">
+                                                            {meta.label} 단계 기록이 아직 비어있습니다. 편집 모드로 전환하면 템플릿이 자동으로 표시됩니다.
+                                                        </p>
+                                                    </div>
+                                                );
+                                            }
+                                            return (
+                                                <div className={`p-5 rounded-2xl border border-slate-200 dark:border-slate-700 ${meta.bg} prose prose-sm dark:prose-invert max-w-none leading-relaxed overflow-auto max-h-[500px] custom-scrollbar`}>
+                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
 
                                     {/* Comments Section */}
                                     <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
@@ -603,6 +678,12 @@ export default function KanbanBoardClient({
                                             onClick={async () => {
                                                 setIsSaving(true);
                                                 await saveTaskDetails(projectId, selectedTaskDetails.id, editForm.description, editForm.beforeWork, editForm.afterWork, editForm.phase, editForm.taskType, editForm.scale);
+                                                await saveTaskWorkByStatus(projectId, selectedTaskDetails.id, {
+                                                    workTodo: editForm.workTodo,
+                                                    workInProgress: editForm.workInProgress,
+                                                    workReview: editForm.workReview,
+                                                    workDone: editForm.workDone,
+                                                });
                                                 setSelectedTaskDetails({
                                                     ...selectedTaskDetails,
                                                     description: editForm.description,
@@ -610,7 +691,11 @@ export default function KanbanBoardClient({
                                                     after_work: editForm.afterWork,
                                                     phase: editForm.phase,
                                                     task_type: editForm.taskType,
-                                                    scale: editForm.scale
+                                                    scale: editForm.scale,
+                                                    work_todo: editForm.workTodo,
+                                                    work_in_progress: editForm.workInProgress,
+                                                    work_review: editForm.workReview,
+                                                    work_done: editForm.workDone
                                                 });
                                                 setTasks(prev => prev.map(t => t.id === selectedTaskDetails.id ? {
                                                     ...t,
@@ -619,7 +704,11 @@ export default function KanbanBoardClient({
                                                     after_work: editForm.afterWork,
                                                     phase: editForm.phase,
                                                     task_type: editForm.taskType,
-                                                    scale: editForm.scale
+                                                    scale: editForm.scale,
+                                                    work_todo: editForm.workTodo,
+                                                    work_in_progress: editForm.workInProgress,
+                                                    work_review: editForm.workReview,
+                                                    work_done: editForm.workDone
                                                 } : t));
                                                 setIsSaving(false);
                                             }}
@@ -641,13 +730,18 @@ export default function KanbanBoardClient({
                                                     const freshTask = await syncTaskFromDb(selectedTaskDetails.id);
                                                     if (freshTask) {
                                                         setEditForm({
-                                                            description: freshTask.description || '',
+                                                            description: isTemplateEmpty(freshTask.description) ? TASK_DESCRIPTION_TEMPLATE : freshTask.description || '',
                                                             beforeWork: freshTask.before_work || '',
-                                                            afterWork: freshTask.after_work || '',
+                                                            afterWork: isTemplateEmpty(freshTask.after_work) ? TASK_AFTER_WORK_TEMPLATE : freshTask.after_work || '',
                                                             phase: freshTask.phase || '',
                                                             taskType: freshTask.task_type || '',
-                                                            scale: freshTask.scale || ''
+                                                            scale: freshTask.scale || '',
+                                                            workTodo: freshTask.work_todo || '',
+                                                            workInProgress: freshTask.work_in_progress || '',
+                                                            workReview: freshTask.work_review || '',
+                                                            workDone: freshTask.work_done || ''
                                                         });
+                                                        getTaskHistoryAction(freshTask.id).then(h => setStatusHistory(h || [])).catch(() => {});
                                                         setSelectedTaskDetails({
                                                             ...freshTask,
                                                             status: freshTask.status // Make sure dropdown aligns
@@ -718,6 +812,8 @@ export default function KanbanBoardClient({
                                                         setTaskStatus(projectId, selectedTaskDetails.id, newStatus);
                                                         setTasks(prev => prev.map(t => t.id === selectedTaskDetails.id ? { ...t, status: newStatus } : t));
                                                         setSelectedTaskDetails({ ...selectedTaskDetails, status: newStatus });
+                                                        setActiveWorkTab(newStatus);
+                                                        getTaskHistoryAction(selectedTaskDetails.id).then(h => setStatusHistory(h || [])).catch(() => {});
                                                     });
                                                 }}
                                                 className={`w-full appearance-none flex items-center gap-2 pl-3 pr-8 py-2.5 rounded-xl text-sm font-bold border-2 cursor-pointer shadow-sm focus: outline-none focus: ring-2 focus: ring-indigo-500 transition-colors 
@@ -740,61 +836,143 @@ export default function KanbanBoardClient({
                                     {/* Metadata Timeline */}
                                     <div className="flex-1">
                                         <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">타임라인</h4>
-                                        <div className="relative pl-3 border-l-2 border-slate-200 dark:border-slate-700 flex flex-col gap-6">
+                                        {(() => {
+                                            const fmt = (iso?: string | null) =>
+                                                iso ? new Date(iso).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' }) : null;
+                                            const now = new Date().toISOString();
+                                            const createdAt = selectedTaskDetails.created_at;
+                                            const startedAt = selectedTaskDetails.started_at;
+                                            const reviewAt = selectedTaskDetails.review_at;
+                                            const completedAt = selectedTaskDetails.completed_at;
+                                            const status = selectedTaskDetails.status;
 
-                                            {/* Created */}
-                                            <div className="relative">
-                                                <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-slate-50 dark:ring-slate-900" />
-                                                <div className="flex flex-col gap-1 text-sm">
-                                                    <span className="font-semibold text-slate-700 dark:text-slate-300">생성일</span>
-                                                    <span className="text-slate-500 dark:text-slate-400 text-xs">
-                                                        {new Date(selectedTaskDetails.created_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' })}
-                                                    </span>
-                                                </div>
-                                            </div>
+                                            // 각 구간 duration: 다음 단계 시각이 없으면 현재 상태에 해당하는 구간은 "경과 중"으로 표시
+                                            const todoDuration = startedAt
+                                                ? diffMs(createdAt, startedAt)
+                                                : status === 'TODO' ? diffMs(createdAt, now) : null;
+                                            const inProgressDuration = reviewAt
+                                                ? diffMs(startedAt, reviewAt)
+                                                : (startedAt && status === 'IN_PROGRESS') ? diffMs(startedAt, now)
+                                                : (startedAt && !reviewAt && completedAt) ? diffMs(startedAt, completedAt)
+                                                : null;
+                                            const reviewDuration = completedAt
+                                                ? diffMs(reviewAt, completedAt)
+                                                : (reviewAt && status === 'REVIEW') ? diffMs(reviewAt, now)
+                                                : null;
 
-                                            {/* Started */}
-                                            <div className={`relative ${!selectedTaskDetails.started_at ? 'opacity-40 grayscale' : ''} `}>
-                                                <div className={`absolute-left-[17px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-slate-50 dark:ring-slate-900 ${selectedTaskDetails.started_at ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-600'} `} />
-                                                <div className="flex flex-col gap-1 text-sm">
-                                                    <span className={`font-semibold ${selectedTaskDetails.started_at ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'} `}>시작일</span>
-                                                    <span className="text-slate-500 dark:text-slate-400 text-xs text-balance">
-                                                        {selectedTaskDetails.started_at
-                                                            ? new Date(selectedTaskDetails.started_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' })
-                                                            : '아직 시작되지 않음'
-                                                        }
-                                                    </span>
-                                                </div>
-                                            </div>
+                                            const isOngoing = (phase: 'TODO' | 'IN_PROGRESS' | 'REVIEW') => status === phase;
 
-                                            {/* Completed */}
-                                            <div className={`relative ${!selectedTaskDetails.completed_at ? 'opacity-40 grayscale' : ''} `}>
-                                                <div className={`absolute-left-[17px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-slate-50 dark:ring-slate-900 ${selectedTaskDetails.completed_at ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'} `} />
-                                                <div className="flex flex-col gap-1 text-sm">
-                                                    <span className={`font-semibold ${selectedTaskDetails.completed_at ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'} `}>완료일</span>
-                                                    <span className="text-slate-500 dark:text-slate-400 text-xs text-balance">
-                                                        {selectedTaskDetails.completed_at
-                                                            ? new Date(selectedTaskDetails.completed_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' })
-                                                            : '아직 완료되지 않음'
-                                                        }
-                                                    </span>
-                                                </div>
-                                            </div>
+                                            return (
+                                                <div className="relative pl-3 border-l-2 border-slate-200 dark:border-slate-700 flex flex-col gap-6">
 
-                                            {/* Updated By */}
-                                            {selectedTaskDetails.updated_by && (
-                                                <div className="relative">
-                                                    <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-slate-50 dark:ring-slate-900 bg-indigo-500" />
-                                                    <div className="flex flex-col gap-1 text-sm">
-                                                        <span className="font-semibold text-indigo-700 dark:text-indigo-400">최근 수정자</span>
-                                                        <span className="text-slate-500 dark:text-slate-400 text-xs text-balance">
-                                                            {selectedTaskDetails.updated_by}
-                                                        </span>
+                                                    {/* Created */}
+                                                    <div className="relative">
+                                                        <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-slate-50 dark:ring-slate-900" />
+                                                        <div className="flex flex-col gap-1 text-sm">
+                                                            <span className="font-semibold text-slate-700 dark:text-slate-300">생성일 (TODO)</span>
+                                                            <span className="text-slate-500 dark:text-slate-400 text-xs">{fmt(createdAt)}</span>
+                                                            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                                                                TODO 경과: {formatDuration(todoDuration)}{isOngoing('TODO') ? ' (진행 중)' : ''}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
 
-                                        </div>
+                                                    {/* Started (IN_PROGRESS) */}
+                                                    <div className={`relative ${!startedAt ? 'opacity-40 grayscale' : ''}`}>
+                                                        <div className={`absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-slate-50 dark:ring-slate-900 ${startedAt ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                                                        <div className="flex flex-col gap-1 text-sm">
+                                                            <span className={`font-semibold ${startedAt ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}>시작일 (IN_PROGRESS)</span>
+                                                            <span className="text-slate-500 dark:text-slate-400 text-xs text-balance">
+                                                                {fmt(startedAt) ?? '아직 시작되지 않음'}
+                                                            </span>
+                                                            {startedAt && (
+                                                                <span className="text-[11px] font-medium text-blue-500 dark:text-blue-400">
+                                                                    IN_PROGRESS 경과: {formatDuration(inProgressDuration)}{isOngoing('IN_PROGRESS') ? ' (진행 중)' : ''}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Review */}
+                                                    <div className={`relative ${!reviewAt ? 'opacity-40 grayscale' : ''}`}>
+                                                        <div className={`absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-slate-50 dark:ring-slate-900 ${reviewAt ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                                                        <div className="flex flex-col gap-1 text-sm">
+                                                            <span className={`font-semibold ${reviewAt ? 'text-amber-700 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'}`}>리뷰 진입 (REVIEW)</span>
+                                                            <span className="text-slate-500 dark:text-slate-400 text-xs text-balance">
+                                                                {fmt(reviewAt) ?? '아직 리뷰 단계 아님'}
+                                                            </span>
+                                                            {reviewAt && (
+                                                                <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                                                                    REVIEW 경과: {formatDuration(reviewDuration)}{isOngoing('REVIEW') ? ' (진행 중)' : ''}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Completed */}
+                                                    <div className={`relative ${!completedAt ? 'opacity-40 grayscale' : ''}`}>
+                                                        <div className={`absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-slate-50 dark:ring-slate-900 ${completedAt ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                                                        <div className="flex flex-col gap-1 text-sm">
+                                                            <span className={`font-semibold ${completedAt ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>완료일 (DONE)</span>
+                                                            <span className="text-slate-500 dark:text-slate-400 text-xs text-balance">
+                                                                {fmt(completedAt) ?? '아직 완료되지 않음'}
+                                                            </span>
+                                                            {completedAt && (
+                                                                <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                                                                    총 소요: {formatDuration(diffMs(createdAt, completedAt))}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Updated By */}
+                                                    {selectedTaskDetails.updated_by && (
+                                                        <div className="relative">
+                                                            <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-slate-50 dark:ring-slate-900 bg-indigo-500" />
+                                                            <div className="flex flex-col gap-1 text-sm">
+                                                                <span className="font-semibold text-indigo-700 dark:text-indigo-400">최근 수정자</span>
+                                                                <span className="text-slate-500 dark:text-slate-400 text-xs text-balance">
+                                                                    {selectedTaskDetails.updated_by}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+
+                                    {/* Status Transition History */}
+                                    <div>
+                                        <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">전이 이력</h4>
+                                        {statusHistory.length === 0 ? (
+                                            <p className="text-xs text-slate-400 italic">아직 상태 변경 이력이 없습니다.</p>
+                                        ) : (
+                                            <div className="flex flex-col gap-2">
+                                                {statusHistory.map((h, idx) => {
+                                                    const prev = idx > 0 ? statusHistory[idx - 1] : null;
+                                                    const prevTime = prev ? prev.changed_at : selectedTaskDetails.created_at;
+                                                    const dur = diffMs(prevTime, h.changed_at);
+                                                    const toMeta = STATUS_TAB_META[h.to_status as WorkStatus];
+                                                    return (
+                                                        <div key={h.id} className={`rounded-lg border border-slate-200 dark:border-slate-700 ${toMeta?.bg ?? ''} p-2.5 text-[11px]`}>
+                                                            <div className="flex items-center gap-1.5 font-semibold">
+                                                                {h.from_status && <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px]">{h.from_status}</span>}
+                                                                <span className="text-slate-400">→</span>
+                                                                <span className={`px-1.5 py-0.5 rounded text-[10px] text-white ${toMeta?.accent ?? 'bg-slate-500'}`}>{h.to_status}</span>
+                                                            </div>
+                                                            <div className="mt-1 text-slate-500 dark:text-slate-400">
+                                                                {new Date(h.changed_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' })}
+                                                            </div>
+                                                            <div className="text-slate-400 dark:text-slate-500 text-[10px]">
+                                                                이전 상태 경과: {formatDuration(dur)}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

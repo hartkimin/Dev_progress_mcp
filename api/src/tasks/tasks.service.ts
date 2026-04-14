@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskStatusDto, UpdateTaskDetailsDto } from './dto/update-task.dto';
 import { EventsGateway } from '../events/events.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
+import { WORK_TEMPLATES, isTemplateEmpty } from './task-templates';
 
 @Injectable()
 export class TasksService {
@@ -27,6 +28,10 @@ export class TasksService {
                 taskType: dto.taskType,
                 scale: dto.scale,
                 description: dto.description,
+                workTodo: isTemplateEmpty(dto.workTodo) ? WORK_TEMPLATES.workTodo : dto.workTodo,
+                workInProgress: isTemplateEmpty(dto.workInProgress) ? WORK_TEMPLATES.workInProgress : dto.workInProgress,
+                workReview: isTemplateEmpty(dto.workReview) ? WORK_TEMPLATES.workReview : dto.workReview,
+                workDone: isTemplateEmpty(dto.workDone) ? WORK_TEMPLATES.workDone : dto.workDone,
                 status: dto.status || 'TODO',
                 startDate: dto.startDate ? new Date(dto.startDate) : null,
                 dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
@@ -80,13 +85,7 @@ export class TasksService {
         const task = await this.prisma.task.findUnique({ where: { id } });
         if (!task) throw new NotFoundException('Task not found');
 
-        // === 상태 전이 규칙 (Validation) ===
-        if (dto.status === 'REVIEW') {
-            // REVIEW로 넘길 때는 반드시 afterWork(작업 결과물)이 존재해야 함
-            if (!task.afterWork || task.afterWork.trim() === '') {
-                throw new BadRequestException('상태를 REVIEW로 변경하려면 먼저 작업 결과(afterWork)를 작성해야 합니다.');
-            }
-        }
+        // 상태 이동은 자유. 작업 내용 가이드는 UI에서 경고로 안내.
 
         const dataToUpdate: any = {
             status: dto.status,
@@ -95,16 +94,42 @@ export class TasksService {
 
         if (dto.status === 'IN_PROGRESS' && task.status !== 'IN_PROGRESS') {
             dataToUpdate.startedAt = task.startedAt || new Date();
+        } else if (dto.status === 'REVIEW' && task.status !== 'REVIEW') {
+            dataToUpdate.reviewAt = new Date();
         } else if (dto.status === 'DONE') {
             dataToUpdate.completedAt = new Date();
         }
 
-        const updatedTask = await this.prisma.task.update({
-            where: { id },
-            data: dataToUpdate
-        });
+        const snapshot = {
+            workTodo: task.workTodo ?? null,
+            workInProgress: task.workInProgress ?? null,
+            workReview: task.workReview ?? null,
+            workDone: task.workDone ?? null,
+        };
+
+        const [updatedTask] = await this.prisma.$transaction([
+            this.prisma.task.update({ where: { id }, data: dataToUpdate }),
+            this.prisma.taskStatusHistory.create({
+                data: {
+                    taskId: id,
+                    fromStatus: task.status,
+                    toStatus: dto.status,
+                    changedBy: 'API User',
+                    snapshot: snapshot as any,
+                },
+            }),
+        ]);
         this.eventsGateway.broadcastTaskUpdate(updatedTask.projectId, updatedTask);
         return updatedTask;
+    }
+
+    async getStatusHistory(id: string) {
+        const task = await this.prisma.task.findUnique({ where: { id }, select: { id: true } });
+        if (!task) throw new NotFoundException('Task not found');
+        return this.prisma.taskStatusHistory.findMany({
+            where: { taskId: id },
+            orderBy: { changedAt: 'asc' },
+        });
     }
 
     async updateDetails(id: string, dto: UpdateTaskDetailsDto) {
@@ -121,6 +146,10 @@ export class TasksService {
                 description: dto.description,
                 beforeWork: dto.beforeWork,
                 afterWork: dto.afterWork,
+                workTodo: dto.workTodo,
+                workInProgress: dto.workInProgress,
+                workReview: dto.workReview,
+                workDone: dto.workDone,
                 phase: dto.phase,
                 taskType: dto.taskType,
                 scale: dto.scale,
@@ -128,7 +157,7 @@ export class TasksService {
                 dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
                 updatedBy: 'API User',
                 assigneeId: newAssigneeId,
-                ...(dto['title'] ? { title: dto['title'] } : {}) 
+                ...(dto['title'] ? { title: dto['title'] } : {})
             }
         });
 

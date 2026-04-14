@@ -35,6 +35,26 @@ export class CreateTaskDto {
     @IsString()
     description?: string;
 
+    @ApiPropertyOptional({ description: 'TODO 단계 수행 내역 (비우면 템플릿 자동 삽입)' })
+    @IsOptional()
+    @IsString()
+    workTodo?: string;
+
+    @ApiPropertyOptional({ description: 'IN_PROGRESS 단계 수행 내역 (비우면 템플릿 자동 삽입)' })
+    @IsOptional()
+    @IsString()
+    workInProgress?: string;
+
+    @ApiPropertyOptional({ description: 'REVIEW 단계 수행 내역 (비우면 템플릿 자동 삽입)' })
+    @IsOptional()
+    @IsString()
+    workReview?: string;
+
+    @ApiPropertyOptional({ description: 'DONE 단계 수행 내역 (비우면 템플릿 자동 삽입)' })
+    @IsOptional()
+    @IsString()
+    workDone?: string;
+
     @ApiPropertyOptional({ description: '초기 상태', enum: ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'] })
     @IsOptional()
     @IsEnum(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'])
