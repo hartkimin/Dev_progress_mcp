@@ -48,6 +48,18 @@ const translations: Translations = {
     'catDevelopment': { en: 'Development', ko: '개발' },
     'catAi': { en: 'AI Management', ko: 'AI 관리' },
 
+    // Phase-centric Nav Groups
+    'navGroupOverview':   { en: 'Overview',  ko: '개요' },
+    'navGroupIdeation':   { en: 'Ideation',  ko: '기획' },
+    'navGroupDesign':     { en: 'Design',    ko: '설계' },
+    'navGroupBuild':      { en: 'Build',     ko: '개발' },
+    'navGroupQa':         { en: 'QA',        ko: '품질' },
+    'navGroupDeploy':     { en: 'Deploy',    ko: '배포' },
+
+    // Ideation Phase Tabs
+    'tabYcQuestions':     { en: 'YC Questions', ko: 'YC 질문' },
+    'tabPlanReviewHub':   { en: 'Plan Reviews', ko: 'Plan Review' },
+
     // Calendar
     'calToday': { en: 'Today', ko: '오늘' },
     'calMoreItems': { en: 'more', ko: '개 더보기' },
@@ -248,6 +260,14 @@ const translations: Translations = {
     'planReview.decision.accept': { en: 'Accept', ko: '수락' },
     'planReview.decision.revise': { en: 'Revise', ko: '수정' },
     'planReview.decision.reject': { en: 'Reject', ko: '거절' },
+
+    // Strategy Readiness (Overview dashboard widgets)
+    'strategyReadinessTitle':    { en: 'Strategy Readiness',   ko: '전략 준비도' },
+    'ycCompletionLabel':         { en: 'YC completion',        ko: 'YC 완료율' },
+    'planReviewAvgLabel':        { en: 'Plan review avg',      ko: 'Plan Review 평균' },
+    'ycMissingTop3Title':        { en: 'Top 3 projects missing YC answers', ko: 'YC 미응답 Top 3' },
+    'recentPlanReviewsTitle':    { en: 'Recent Plan Reviews',  ko: '최근 Plan Review' },
+    'startIdeationCta':          { en: 'Start Ideation',       ko: 'Ideation 시작하기' },
 };
 
 interface I18nContextType {
