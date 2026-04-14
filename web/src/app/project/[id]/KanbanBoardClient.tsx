@@ -500,7 +500,7 @@ export default function KanbanBoardClient({
                         onClick={() => setSelectedTaskDetails(null)}
                     ></div>
 
-                    <div className="relative w-full max-w-5xl bg-white dark:bg-slate-900 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-200 dark:border-slate-800 flex flex-col h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className="relative w-full max-w-5xl bg-white dark:bg-slate-900 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-200 dark:border-slate-800 flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
                         {/* Header - Simple and Clean */}
                         <div className="flex items-start justify-between p-6 md:p-8 border-b border-slate-100 dark:border-slate-800/60 bg-white dark:bg-slate-900/80 backdrop-blur-sm z-10 shrink-0">
@@ -544,7 +544,7 @@ export default function KanbanBoardClient({
                         </div>
 
                         {/* Two Column Body */}
-                        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+                        <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
                             {/* Main Content (Left) */}
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 bg-white dark:bg-slate-900">
                                 <div className="flex flex-col gap-6 max-w-3xl pb-10">
@@ -673,9 +673,9 @@ export default function KanbanBoardClient({
                             </div>
 
                             {/* Sidebar / Metadata (Right) */}
-                            <div className="w-full md:w-72 lg:w-80 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 bg-slate-50 flex flex-col items-stretch 
-  dark:bg-[color-mix(in_oklab,currentColor_10%,transparent)] shrink-0 overflow-y-auto custom-scrollbar">
-                                <div className="p-6 flex flex-col gap-8 h-full">
+                            <div className="w-full md:w-72 lg:w-80 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 bg-slate-50 flex flex-col items-stretch
+  dark:bg-[color-mix(in_oklab,currentColor_10%,transparent)] shrink-0 min-h-0 overflow-y-auto custom-scrollbar">
+                                <div className="p-6 flex flex-col gap-8 pb-8">
 
                                     {/* Action Buttons */}
                                     <div className="flex flex-col gap-3">
