@@ -4,7 +4,7 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskStatusDto, UpdateTaskDetailsDto } from './dto/update-task.dto';
 import { EventsGateway } from '../events/events.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
-import { WORK_TEMPLATES, isTemplateEmpty } from './task-templates';
+import { WORK_TEMPLATES, isTemplateEmpty, isDefaultOrEmpty, buildReviewChecklist } from './task-templates';
 
 @Injectable()
 export class TasksService {
@@ -96,6 +96,17 @@ export class TasksService {
             dataToUpdate.startedAt = task.startedAt || new Date();
         } else if (dto.status === 'REVIEW' && task.status !== 'REVIEW') {
             dataToUpdate.reviewAt = new Date();
+            // Auto-seed workReview with a context-aware checklist when the
+            // existing value is empty or only contains the generic template.
+            if (isDefaultOrEmpty(task.workReview, WORK_TEMPLATES.workReview)) {
+                dataToUpdate.workReview = buildReviewChecklist({
+                    title: task.title,
+                    category: task.category,
+                    taskType: task.taskType,
+                    phase: task.phase,
+                    workInProgress: task.workInProgress,
+                });
+            }
         } else if (dto.status === 'DONE') {
             dataToUpdate.completedAt = new Date();
         }
