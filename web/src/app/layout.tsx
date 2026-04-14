@@ -43,12 +43,22 @@ import { LanguageProvider } from "@/lib/i18n";
 import { AuthProvider } from "@/components/AuthProvider";
 import SyncAuth from "@/components/SyncAuth";
 import AiSidebar from "@/components/AiSidebar";
+import { listProjects } from "@/lib/db";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Best-effort project list for the sidebar. Fails silently on unauthed
+  // pages (signin etc.) — Sidebar handles empty list gracefully.
+  let sidebarProjects: { id: string; name: string }[] = [];
+  try {
+    const rows = await listProjects();
+    sidebarProjects = rows.map(p => ({ id: p.id, name: p.name }));
+  } catch {
+    /* noop */
+  }
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -60,7 +70,7 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <LanguageProvider>
               <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans selection:bg-indigo-500/30 transition-colors duration-300">
-                <Sidebar />
+                <Sidebar projects={sidebarProjects} />
                 <div className="flex-1 overflow-y-auto w-full h-full relative flex flex-col">
                   <TopNav />
                   <div className="flex-1">

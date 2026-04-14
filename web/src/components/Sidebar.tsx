@@ -5,59 +5,32 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import {
     LayoutDashboard,
-    Key,
-    Blocks,
-    Users,
     PanelLeftClose,
     PanelLeftOpen,
-    UserCircle2,
-    BarChart3,
-    Activity,
-    Globe
+    Settings,
+    ChevronDown,
+    ChevronRight,
+    FolderKanban,
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
 
-export default function Sidebar() {
+type SidebarProject = { id: string; name: string };
+
+export default function Sidebar({ projects = [] }: { projects?: SidebarProject[] }) {
     const pathname = usePathname();
-    const { t, toggleLanguage, language } = useTranslation();
+    const { t } = useTranslation();
     const [isCollapsed, setIsCollapsed] = useState(false);
 
-    const workspaceItems = [
-        { name: t('dashboard'), href: '/', icon: LayoutDashboard },
-    ];
+    // Auto-expand the projects list when the user is already on a project page.
+    const onProjectPage = pathname.startsWith('/project/');
+    const [projectsExpanded, setProjectsExpanded] = useState(onProjectPage);
 
-    const settingsItems = [
-        { name: t('integrations'), href: '/admin/integrations', icon: Blocks },
-        { name: t('users'), href: '/admin/users', icon: Users },
-        { name: t('apiKeys'), href: '/admin/api-keys', icon: Key },
-    ];
+    const isDashboardActive = pathname === '/' || onProjectPage;
+    const isSettingsActive = pathname.startsWith('/admin/');
 
-    const projectIdMatch = pathname.match(/^\/project\/([^\/]+)/);
-    const projectId = projectIdMatch ? projectIdMatch[1] : null;
-
-    // Helper to render groups
-    const renderLinks = (items: { name: string, href: string, icon: any }[], colorConfig: { activeBg: string, hoverBg: string }) => {
-        return items.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href) && !item.href.includes('admin') && item.href !== '/activity');
-            const Icon = item.icon;
-            return (
-                <Link
-                    key={item.href}
-                    href={item.href}
-                    title={isCollapsed ? item.name : undefined}
-                    className={`flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200 group relative ${isActive
-                        ? colorConfig.activeBg
-                        : colorConfig.hoverBg
-                        } ${isCollapsed ? 'justify-center' : ''}`}
-                >
-                    <span className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
-                        <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-                    </span>
-                    {!isCollapsed && <span className="font-medium whitespace-nowrap">{item.name}</span>}
-                </Link>
-            );
-        });
-    };
+    const activeProjectId = onProjectPage
+        ? pathname.match(/^\/project\/([^\/]+)/)?.[1] ?? null
+        : null;
 
     return (
         <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-300 flex flex-col hidden md:flex h-full shadow-sm z-20 transition-all duration-300`}>
@@ -77,29 +50,88 @@ export default function Sidebar() {
                 </button>
             </div>
 
-            {/* Navigation */}
-            <nav className={`px-3 py-6 space-y-6 overflow-y-auto custom-scrollbar flex-1`}>
-
-                {/* Workspace Group */}
+            <nav className="px-3 py-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+                {/* Workspace Group — Dashboard with expandable project sub-list */}
                 <div className="space-y-1">
-                    {!isCollapsed && <p className="px-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{t('workspace')}</p>}
-                    {renderLinks(workspaceItems, {
-                        activeBg: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shadow-[inset_3px_0_0_0_#6366f1] dark:shadow-[inset_3px_0_0_0_#818cf8]',
-                        hoverBg: 'hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-indigo-500 dark:hover:text-white'
-                    })}
+                    {!isCollapsed && (
+                        <p className="px-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                            {t('workspace')}
+                        </p>
+                    )}
+
+                    <div className="flex items-center">
+                        <Link
+                            href="/"
+                            title={isCollapsed ? t('dashboard') : undefined}
+                            className={`flex-1 flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200 group relative ${
+                                isDashboardActive
+                                    ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shadow-[inset_3px_0_0_0_#6366f1] dark:shadow-[inset_3px_0_0_0_#818cf8]'
+                                    : 'hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-indigo-500 dark:hover:text-white'
+                            } ${isCollapsed ? 'justify-center' : ''}`}
+                        >
+                            <span className={`transition-transform duration-200 ${isDashboardActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                                <LayoutDashboard size={22} strokeWidth={isDashboardActive ? 2.5 : 2} />
+                            </span>
+                            {!isCollapsed && <span className="font-medium whitespace-nowrap">{t('dashboard')}</span>}
+                        </Link>
+                        {!isCollapsed && projects.length > 0 && (
+                            <button
+                                onClick={() => setProjectsExpanded(e => !e)}
+                                className="ml-1 p-1.5 rounded-md text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                aria-label={projectsExpanded ? 'Collapse projects' : 'Expand projects'}
+                            >
+                                {projectsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                            </button>
+                        )}
+                    </div>
+
+                    {!isCollapsed && projectsExpanded && projects.length > 0 && (
+                        <ul className="ml-4 mt-1 space-y-0.5 border-l border-slate-200 dark:border-slate-800 pl-2">
+                            {projects.map(p => {
+                                const active = p.id === activeProjectId;
+                                return (
+                                    <li key={p.id}>
+                                        <Link
+                                            href={`/project/${p.id}`}
+                                            title={p.name}
+                                            className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors ${
+                                                active
+                                                    ? 'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 font-medium'
+                                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-indigo-500 dark:hover:text-indigo-400'
+                                            }`}
+                                        >
+                                            <FolderKanban size={14} strokeWidth={active ? 2.5 : 2} className="shrink-0" />
+                                            <span className="truncate">{p.name}</span>
+                                        </Link>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
                 </div>
 
-
-
-                {/* Settings & Admin Group */}
+                {/* Settings — single consolidated entry */}
                 <div className="space-y-1">
-                    {!isCollapsed && <p className="px-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{t('settings')}</p>}
-                    {renderLinks(settingsItems, {
-                        activeBg: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 shadow-[inset_3px_0_0_0_#f59e0b] dark:shadow-[inset_3px_0_0_0_#fbbf24]',
-                        hoverBg: 'hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-amber-500 dark:hover:text-amber-400'
-                    })}
+                    {!isCollapsed && (
+                        <p className="px-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                            {t('settings')}
+                        </p>
+                    )}
+                    <Link
+                        href="/admin/integrations"
+                        title={isCollapsed ? t('settings') : undefined}
+                        className={`flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200 group relative ${
+                            isSettingsActive
+                                ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 shadow-[inset_3px_0_0_0_#f59e0b] dark:shadow-[inset_3px_0_0_0_#fbbf24]'
+                                : 'hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-amber-500 dark:hover:text-amber-400'
+                        } ${isCollapsed ? 'justify-center' : ''}`}
+                    >
+                        <span className={`transition-transform duration-200 ${isSettingsActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                            <Settings size={22} strokeWidth={isSettingsActive ? 2.5 : 2} />
+                        </span>
+                        {!isCollapsed && <span className="font-medium whitespace-nowrap">{t('settings')}</span>}
+                    </Link>
                 </div>
-
             </nav>
         </aside>
     );
