@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useTransition } from 'react';
-import { getLatestYCAnswers, saveYCAnswers, type YcAnswersInput, type YcAnswer } from '@/app/actions/planReviewActions';
+import { getLatestYCAnswers, saveYCAnswers } from '@/app/actions/planReviewActions';
+import type { YcAnswersInput, YcAnswer } from '@/lib/db';
 import { useTranslation } from '@/lib/i18n';
 
 // NOTE: i18n hook in this project is `useTranslation` (not `useI18n`).

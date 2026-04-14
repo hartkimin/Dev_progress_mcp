@@ -6,15 +6,13 @@ import {
     savePlanReview as dbSavePlanReview,
     listPlanReviews as dbListPlanReviews,
     getPlanReview as dbGetPlanReview,
-    type YcAnswer,
     type YcAnswersInput,
-    type PlanReview,
     type PlanReviewInput,
 } from '@/lib/db';
 
-export type { YcAnswer, YcAnswersInput, PlanReview, PlanReviewInput };
-export type PlanReviewKind = PlanReviewInput['kind'];
-export type PlanReviewDecision = NonNullable<PlanReviewInput['decision']>;
+// NOTE: Do not re-export types from a 'use server' file — Turbopack chokes on
+// non-async exports in server action modules. Import types directly from
+// '@/lib/db' in consumer components.
 
 export async function saveYCAnswers(projectId: string, answers: YcAnswersInput) {
     return dbSaveYcAnswers(projectId, answers);
@@ -28,7 +26,7 @@ export async function savePlanReview(projectId: string, input: PlanReviewInput) 
     return dbSavePlanReview(projectId, input);
 }
 
-export async function listPlanReviews(projectId: string, kind?: PlanReviewKind) {
+export async function listPlanReviews(projectId: string, kind?: PlanReviewInput['kind']) {
     return dbListPlanReviews(projectId, kind);
 }
 
