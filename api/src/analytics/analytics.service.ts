@@ -444,6 +444,15 @@ export class AnalyticsService {
                 ? project.tasks.reduce((latest, t) => t.updatedAt > latest ? t.updatedAt : latest, project.tasks[0].updatedAt).toISOString()
                 : project.createdAt.toISOString();
 
+            const phaseProgress = VIBE_PHASES.map((phase) => {
+                const phaseTasks = project.tasks.filter((t) => t.phase === phase);
+                return {
+                    phase,
+                    total: phaseTasks.length,
+                    done: phaseTasks.filter((t) => t.status === 'DONE').length,
+                };
+            });
+
             return {
                 id: project.id,
                 name: project.name,
@@ -459,6 +468,7 @@ export class AnalyticsService {
                     dominantPhase,
                     lastActivity,
                 },
+                phaseProgress,
             };
         });
     }
