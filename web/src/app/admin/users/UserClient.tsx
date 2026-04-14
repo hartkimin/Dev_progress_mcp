@@ -62,14 +62,14 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
                         {t('adminUsers')}
                     </h1>
                     <p className="text-lg text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed">
-                        Manage workspace members and configure fine-grained Role-Based Access Control (RBAC).
+                        {t('adminUsersSubtitle')}
                     </p>
                 </div>
             </header>
 
             {/* Create User Form */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-4">Invite Member</h2>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-4">{t('addUser')}</h2>
                 <form onSubmit={handleCreate} className="flex flex-col lg:flex-row gap-4 items-end">
                     <div className="flex-1 w-full max-w-sm">
                         <label htmlFor="userName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -101,7 +101,7 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
                     </div>
                     <div className="flex-1 w-full max-w-sm">
                         <label htmlFor="userRole" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                            Workspace Role
+                            {t('userRole')}
                         </label>
                         <select
                             id="userRole"
@@ -124,7 +124,7 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
                         )}
-                        Send Invite
+                        {t('addUserButton')}
                     </button>
                 </form>
             </div>
@@ -138,7 +138,7 @@ export default function UserClient({ initialUsers }: { initialUsers: User[] }) {
                                 <th className="px-6 py-4">{t('userId')}</th>
                                 <th className="px-6 py-4">{t('userName')}</th>
                                 <th className="px-6 py-4">{t('userEmail')}</th>
-                                <th className="px-6 py-4">Workspace Role</th>
+                                <th className="px-6 py-4">{t('userRole')}</th>
                                 <th className="px-6 py-4 text-right">{t('userActions')}</th>
                             </tr>
                         </thead>
