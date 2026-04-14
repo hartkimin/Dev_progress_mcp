@@ -6,3 +6,6 @@ database.sqlite
 out.txt
 err.txt
 *.log
+
+# MCP client config contains an API key — per-machine, never committed.
+.mcp.json
