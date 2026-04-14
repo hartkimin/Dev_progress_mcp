@@ -26,6 +26,15 @@ const translations: Translations = {
 
     // Sidebar
     'dashboard': { en: 'Dashboard', ko: '대시보드', zh: '仪表板', ja: 'ダッシュボード' },
+
+    // Orchestra (claude-orchestra integration — sidebar + pages)
+    'orchestra':         { en: 'Orchestra',  ko: '오케스트라',       zh: 'Orchestra',      ja: 'Orchestra' },
+    'orchestraOverview': { en: 'Overview',   ko: '개요',            zh: '概览',            ja: '概要' },
+    'orchestraDreams':   { en: 'Dreams',     ko: 'Dream Cycle',    zh: 'Dreams',          ja: 'Dreams' },
+    'orchestraRalph':    { en: 'Ralph',      ko: 'Ralph Loop',     zh: 'Ralph',           ja: 'Ralph' },
+    'orchestraAgents':   { en: 'Agent Runs', ko: '에이전트 실행',   zh: '代理运行',         ja: 'エージェント' },
+    'orchestraTimeline': { en: 'Timeline',   ko: 'Timeline',       zh: 'Timeline',        ja: 'Timeline' },
+
     'recentActivity': { en: 'Recent Activity', ko: '최근 활동', zh: '最近活动', ja: '最近のアクティビティ' },
     'users': { en: 'Users', ko: '사용자', zh: '用户', ja: 'ユーザー' },
     'apiKeys': { en: 'API Keys', ko: 'API 자격증명', zh: 'API 密钥', ja: 'API キー' },

@@ -15,6 +15,12 @@ import {
     Users,
     KeyRound,
     BarChart3,
+    // Orchestra section icons (claude-orchestra integration)
+    Brain,
+    Moon,
+    ClipboardCheck,
+    Bot,
+    Activity,
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
 
@@ -31,15 +37,28 @@ export default function Sidebar({ projects = [] }: { projects?: SidebarProject[]
 
     const isDashboardActive = pathname === '/' || onProjectPage;
     const isSettingsActive = pathname.startsWith('/admin/');
+    const isOrchestraActive = pathname.startsWith('/orchestra');
 
     // Auto-expand settings submenu when on any admin route.
     const [settingsExpanded, setSettingsExpanded] = useState(isSettingsActive);
+    // Auto-expand Orchestra submenu when on any /orchestra/* route.
+    const [orchestraExpanded, setOrchestraExpanded] = useState(isOrchestraActive);
 
     const SETTINGS_ITEMS: { href: string; icon: typeof Settings; label: string }[] = [
         { href: '/admin/integrations', icon: Plug, label: t('mcpIntegrations') || 'Integrations' },
         { href: '/admin/users', icon: Users, label: t('adminUsers') || 'Users' },
         { href: '/admin/api-keys', icon: KeyRound, label: t('apiKeys') || 'API Keys' },
         { href: '/admin/analytics', icon: BarChart3, label: t('analytics') || 'Analytics' },
+    ];
+
+    // claude-orchestra 통합 대시보드 — orchestra-daemon:9801 의 HTTP API 를
+    // Next.js ``/api/orchestra/*`` 프록시로 소비.
+    const ORCHESTRA_ITEMS: { href: string; icon: typeof Settings; label: string }[] = [
+        { href: '/orchestra',          icon: LayoutDashboard, label: t('orchestraOverview') || 'Overview' },
+        { href: '/orchestra/dreams',   icon: Moon,            label: t('orchestraDreams')   || 'Dreams' },
+        { href: '/orchestra/ralph',    icon: ClipboardCheck,  label: t('orchestraRalph')    || 'Ralph' },
+        { href: '/orchestra/agents',   icon: Bot,             label: t('orchestraAgents')   || 'Agent Runs' },
+        { href: '/orchestra/timeline', icon: Activity,        label: t('orchestraTimeline') || 'Timeline' },
     ];
 
     const activeProjectId = onProjectPage
@@ -116,6 +135,66 @@ export default function Sidebar({ projects = [] }: { projects?: SidebarProject[]
                                         >
                                             <FolderKanban size={14} strokeWidth={active ? 2.5 : 2} className="shrink-0" />
                                             <span className="truncate">{p.name}</span>
+                                        </Link>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
+                </div>
+
+                {/* Orchestra — claude-orchestra 통합 (emerald 색상) */}
+                <div className="space-y-1">
+                    {!isCollapsed && (
+                        <p className="px-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                            {t('orchestra')}
+                        </p>
+                    )}
+
+                    <div className="flex items-center">
+                        <Link
+                            href="/orchestra"
+                            title={isCollapsed ? t('orchestra') : undefined}
+                            className={`flex-1 flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200 group relative ${
+                                isOrchestraActive
+                                    ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-[inset_3px_0_0_0_#10b981] dark:shadow-[inset_3px_0_0_0_#34d399]'
+                                    : 'hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-emerald-500 dark:hover:text-emerald-400'
+                            } ${isCollapsed ? 'justify-center' : ''}`}
+                        >
+                            <span className={`transition-transform duration-200 ${isOrchestraActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                                <Brain size={22} strokeWidth={isOrchestraActive ? 2.5 : 2} />
+                            </span>
+                            {!isCollapsed && <span className="font-medium whitespace-nowrap">{t('orchestra')}</span>}
+                        </Link>
+                        {!isCollapsed && (
+                            <button
+                                onClick={() => setOrchestraExpanded(e => !e)}
+                                className="ml-1 p-1.5 rounded-md text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                aria-label={orchestraExpanded ? 'Collapse Orchestra' : 'Expand Orchestra'}
+                            >
+                                {orchestraExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                            </button>
+                        )}
+                    </div>
+
+                    {!isCollapsed && orchestraExpanded && (
+                        <ul className="ml-4 mt-1 space-y-0.5 border-l border-slate-200 dark:border-slate-800 pl-2">
+                            {ORCHESTRA_ITEMS.map(item => {
+                                const active = pathname === item.href || (item.href !== '/orchestra' && pathname.startsWith(item.href));
+                                const Icon = item.icon;
+                                return (
+                                    <li key={item.href}>
+                                        <Link
+                                            href={item.href}
+                                            title={item.label}
+                                            className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors ${
+                                                active
+                                                    ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-medium'
+                                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-emerald-500 dark:hover:text-emerald-400'
+                                            }`}
+                                        >
+                                            <Icon size={14} strokeWidth={active ? 2.5 : 2} className="shrink-0" />
+                                            <span className="truncate">{item.label}</span>
                                         </Link>
                                     </li>
                                 );
