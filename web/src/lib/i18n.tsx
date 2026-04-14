@@ -206,10 +206,17 @@ const translations: Translations = {
     'toolUpdateProject': { en: 'Update project name or description.', ko: '프로젝트 이름이나 설명을 수정합니다.' },
     'toolGetAnalytics': { en: 'Retrieve project & task analytics.', ko: '프로젝트 및 태스크 통계를 조회합니다.' },
     'toolGetRecentTasks': { en: 'Fetch recently updated tasks.', ko: '최근 업데이트된 태스크를 조회합니다.' },
+    'toolAppendProjectDocument': { en: 'Atomically append one item to an array document (ISSUE_TRACKER, CODE_REVIEW, TEST, DEPLOY).', ko: 'Array 기반 문서(ISSUE_TRACKER, CODE_REVIEW, TEST, DEPLOY)에 항목 1개를 원자적으로 추가합니다.' },
+    'toolSaveYcAnswers': { en: 'Save YC 6-Question answers for the Ideation phase.', ko: 'Ideation 단계의 YC 6가지 질문 응답을 저장합니다.' },
+    'toolGetYcAnswers': { en: 'Get the latest YC 6-Question answers for a project.', ko: '프로젝트의 최신 YC 6가지 질문 응답을 조회합니다.' },
+    'toolSavePlanReview': { en: 'Save a Plan Review (kind: ceo/eng/design/devex). Writes DB row + MD snapshot.', ko: 'Plan Review를 저장합니다 (kind: ceo/eng/design/devex). DB 행 + MD 스냅샷이 함께 작성됩니다.' },
+    'toolListPlanReviews': { en: 'List Plan Reviews for a project, optionally filtered by kind.', ko: '프로젝트의 Plan Review 목록을 조회합니다 (kind 필터 지원).' },
+    'toolGetPlanReview': { en: 'Get a Plan Review by id.', ko: 'ID로 Plan Review를 단건 조회합니다.' },
     'toolCategoryProject': { en: 'Project Management', ko: '프로젝트 관리' },
     'toolCategoryTask': { en: 'Task Management', ko: '태스크 관리' },
     'toolCategoryDocument': { en: 'Document Management', ko: '문서 관리' },
     'toolCategoryAnalytics': { en: 'Analytics & Overview', ko: '분석 & 개요' },
+    'toolCategoryPlanReview': { en: 'Plan Review (gstack)', ko: 'Plan Review (gstack)' },
 
     // Common actions (used by feature components)
     'common.save': { en: 'Save', ko: '저장' },

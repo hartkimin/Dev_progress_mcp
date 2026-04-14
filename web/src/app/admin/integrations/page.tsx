@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Terminal, Puzzle, Box, Code2, Server, Layers, FileEdit, LayoutDashboard, Activity, FileText, History, RotateCcw, ChevronDown, ChevronUp, Trash2, Search, MessageSquare, MessageCircle, PenLine, BarChart3, Clock, Copy, Check } from 'lucide-react';
+import { Terminal, Puzzle, Box, Code2, Server, Layers, FileEdit, LayoutDashboard, Activity, FileText, History, RotateCcw, ChevronDown, ChevronUp, Trash2, Search, MessageSquare, MessageCircle, PenLine, BarChart3, Clock, Copy, Check, ListPlus, ClipboardCheck, ListChecks, Eye, Lightbulb } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
 
 interface ToolDef {
@@ -148,6 +148,14 @@ const TOOL_CATEGORIES: ToolCategory[] = [
                 ]
             },
             {
+                name: 'append_project_document', icon: ListPlus, descKey: 'toolAppendProjectDocument',
+                params: [
+                    { name: 'projectId', required: true, desc: { en: 'Project ID', ko: '프로젝트 ID' } },
+                    { name: 'docType', required: true, desc: { en: 'ISSUE_TRACKER | CODE_REVIEW | TEST | DEPLOY', ko: 'ISSUE_TRACKER | CODE_REVIEW | TEST | DEPLOY' } },
+                    { name: 'item', required: true, desc: { en: 'JSON string of the item to append (e.g. {"title":"Bug fix","status":"TODO"})', ko: '추가할 항목의 JSON 문자열 (예: {"title":"Bug fix","status":"TODO"})' } },
+                ]
+            },
+            {
                 name: 'get_project_document_versions', icon: History, descKey: 'toolGetProjectDocumentVersions',
                 params: [
                     { name: 'projectId', required: true, desc: { en: 'Project ID', ko: '프로젝트 ID' } },
@@ -179,6 +187,56 @@ const TOOL_CATEGORIES: ToolCategory[] = [
                 name: 'get_recent_tasks', icon: Clock, descKey: 'toolGetRecentTasks',
                 params: [
                     { name: 'limit', required: false, desc: { en: 'Number of tasks (default: 50)', ko: '반환 수 (기본: 50)' } },
+                ]
+            },
+        ]
+    },
+    {
+        labelKey: 'toolCategoryPlanReview',
+        color: 'rose',
+        iconBg: 'from-rose-500 to-pink-500',
+        tools: [
+            {
+                name: 'save_yc_answers', icon: Lightbulb, descKey: 'toolSaveYcAnswers',
+                params: [
+                    { name: 'project_id', required: true, desc: { en: 'Project ID', ko: '프로젝트 ID' } },
+                    { name: 'q1_demand', required: false, desc: { en: 'Demand reality: who and how many asked for this?', ko: '수요 현실: 누가, 몇 명이 이걸 요청했나?' } },
+                    { name: 'q2_status_quo', required: false, desc: { en: 'What is broken about the status quo?', ko: '현상 유지의 진짜 문제는?' } },
+                    { name: 'q3_specific', required: false, desc: { en: 'Desperate specificity', ko: '절박한 구체성' } },
+                    { name: 'q4_wedge', required: false, desc: { en: 'Narrowest wedge', ko: '가장 좁은 웨지' } },
+                    { name: 'q5_observation', required: false, desc: { en: 'Observation evidence', ko: '관찰 증거' } },
+                    { name: 'q6_future_fit', required: false, desc: { en: 'Future-fit (still valid in 12 months?)', ko: 'Future-fit (1년 뒤에도 유효한가?)' } },
+                ]
+            },
+            {
+                name: 'get_yc_answers', icon: Eye, descKey: 'toolGetYcAnswers',
+                params: [
+                    { name: 'project_id', required: true, desc: { en: 'Project ID', ko: '프로젝트 ID' } },
+                ]
+            },
+            {
+                name: 'save_plan_review', icon: ClipboardCheck, descKey: 'toolSavePlanReview',
+                params: [
+                    { name: 'project_id', required: true, desc: { en: 'Project ID', ko: '프로젝트 ID' } },
+                    { name: 'kind', required: true, desc: { en: 'ceo | eng | design | devex', ko: 'ceo | eng | design | devex' } },
+                    { name: 'spec_path', required: false, desc: { en: 'Path to the spec being reviewed', ko: '리뷰 대상 spec 경로' } },
+                    { name: 'score', required: false, desc: { en: 'Self-score 0-10', ko: '자기 점수 0-10' } },
+                    { name: 'decision', required: false, desc: { en: 'accept | revise | reject', ko: 'accept | revise | reject' } },
+                    { name: 'payload', required: true, desc: { en: 'Full checklist response (JSON object)', ko: '체크리스트 응답 전체 (JSON 객체)' } },
+                    { name: 'reviewer', required: false, desc: { en: 'Reviewer name (default: solo)', ko: '리뷰어 이름 (기본: solo)' } },
+                ]
+            },
+            {
+                name: 'list_plan_reviews', icon: ListChecks, descKey: 'toolListPlanReviews',
+                params: [
+                    { name: 'project_id', required: true, desc: { en: 'Project ID', ko: '프로젝트 ID' } },
+                    { name: 'kind', required: false, desc: { en: 'Optional filter: ceo | eng | design | devex', ko: '선택 필터: ceo | eng | design | devex' } },
+                ]
+            },
+            {
+                name: 'get_plan_review', icon: FileText, descKey: 'toolGetPlanReview',
+                params: [
+                    { name: 'id', required: true, desc: { en: 'Plan Review ID', ko: 'Plan Review ID' } },
                 ]
             },
         ]
