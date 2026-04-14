@@ -290,8 +290,11 @@ export default function KanbanBoardClient({
                                 ) : null}
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-slate-500 font-medium">
-                                    {new Date(task.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', timeZone: 'Asia/Seoul' })}
+                                <span
+                                    className="text-[11px] text-slate-500 font-medium tabular-nums"
+                                    title={`생성: ${new Date(task.created_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}\n최근 업데이트: ${new Date(task.updated_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`}
+                                >
+                                    {new Date(task.updated_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' })}
                                 </span>
                                 <button
                                     onClick={(e) => {
@@ -441,7 +444,10 @@ export default function KanbanBoardClient({
 
                                     <div className="flex gap-6 overflow-x-auto pb-4 snap-x custom-scrollbar min-h-[500px] w-full">
                                         {columns.map(column => {
-                                            const columnTasks = filteredTasks.filter(t => t.status === column.id);
+                                            const columnTasks = filteredTasks
+                                                .filter(t => t.status === column.id)
+                                                .slice()
+                                                .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
                                             return (
                                                 <section key={column.id} className="snap-center shrink-0 flex flex-col w-80 md:w-[340px]">
