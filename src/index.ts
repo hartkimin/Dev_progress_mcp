@@ -71,7 +71,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             {
                 name: "create_task",
-                description: "프로젝트에 새 태스크를 추가합니다. **상세 내용(description)이 반드시 필요합니다** — 배경/목표/범위 등 실제 내용을 작성하세요. 빈 값이나 템플릿 뼈대만으로는 거부됩니다.",
+                description: "프로젝트에 새 태스크를 추가합니다. **상세 내용(description)과 TODO 단계 수행 계획(workTodo)이 반드시 필요합니다** — description에는 배경/목표/범위 등, workTodo에는 이 태스크를 TODO 상태에서 어떻게 시작할지(문제 정의·조사·접근 방식·의존성·리스크)를 작성하세요. 빈 값이나 템플릿 뼈대만으로는 거부됩니다. (status를 명시적으로 IN_PROGRESS/REVIEW/DONE로 지정하는 경우 workTodo는 optional.)",
                 inputSchema: {
                     type: "object",
                     properties: {
@@ -102,6 +102,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         description: {
                             type: "string",
                             description: "태스크의 상세 설명(필수). 마크다운 허용. 배경/목표/범위/제약/참고 등 실제 내용을 작성하세요. 공백/주석만으로는 거부됩니다. 예: '## 배경\\n...\\n## 목표\\n...'",
+                        },
+                        workTodo: {
+                            type: "string",
+                            description: "TODO 단계의 수행 계획(status=TODO 또는 status 미지정 시 필수). 이 태스크를 시작하기 위한 문제 정의·조사 방향·접근 방식·필요 리소스·예상 리스크를 실제 내용으로 작성하세요. 공백/주석/템플릿 뼈대만으로는 거부됩니다.",
                         },
                         status: {
                             type: "string",
@@ -825,7 +829,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
 
             case "create_task": {
-                const { projectId, title, category = "", phase = "", taskType = "", scale = "", description, status = "TODO", startDate = null, dueDate = null } = args as Record<string, any>;
+                const { projectId, title, category = "", phase = "", taskType = "", scale = "", description, workTodo, status = "TODO", startDate = null, dueDate = null } = args as Record<string, any>;
                 if (typeof title !== 'string' || !title.trim()) {
                     throw new McpError(ErrorCode.InvalidParams, `태스크 생성에는 제목(title)이 필요합니다.`);
                 }
@@ -835,7 +839,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                         `태스크 생성 시 상세 설명(description)이 반드시 필요합니다. 빈 값, 공백, 주석, 또는 템플릿 뼈대만으로는 거부됩니다. 배경/목표/범위 등 실제 내용을 작성해서 다시 호출하세요.`
                     );
                 }
+                if (status === 'TODO' && (typeof workTodo !== 'string' || isTemplateEmpty(workTodo))) {
+                    throw new McpError(
+                        ErrorCode.InvalidParams,
+                        `TODO 상태로 태스크를 생성하려면 workTodo(TODO 단계 수행 계획)가 반드시 필요합니다. 문제 정의·조사·접근 방식·의존성·리스크 등 실제 내용을 작성해서 다시 호출하세요. (status를 IN_PROGRESS/REVIEW/DONE로 지정하는 경우에는 workTodo는 optional.)`
+                    );
+                }
                 const id = await db.createTask(projectId, title, category, phase, taskType, scale, description, status, startDate, dueDate);
+                // 초기 workTodo가 주어졌으면 해당 필드에 저장
+                if (typeof workTodo === 'string' && !isTemplateEmpty(workTodo)) {
+                    await db.updateTaskWorkFields(id, { workTodo });
+                }
                 return {
                     content: [{ type: "text", text: `Task created successfully with ID: ${id}` }],
                 };
