@@ -7,6 +7,7 @@ import ProjectActions from './ProjectActions';
 import { useTranslation } from '@/lib/i18n';
 import type { ProjectSummary, StrategyReadiness } from '@/lib/db';
 import StrategyReadinessSection from './StrategyReadiness';
+import PhaseProgressStrip from './PhaseProgressStrip';
 import { createProjectAction } from '@/app/actions';
 import { AlertTriangle, TrendingUp, Clock } from 'lucide-react';
 
@@ -280,6 +281,12 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
                             <StatusDot count={s.in_progress} color="bg-blue-500" label="Progress" />
                             <StatusDot count={s.review} color="bg-amber-500" label="Review" />
                             <StatusDot count={s.done} color="bg-emerald-500" label="Done" />
+                        </div>
+                    )}
+
+                    {project.phase_progress && project.phase_progress.length > 0 && (
+                        <div className="mb-4">
+                            <PhaseProgressStrip phases={project.phase_progress} />
                         </div>
                     )}
 
