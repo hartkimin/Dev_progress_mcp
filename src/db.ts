@@ -18,12 +18,15 @@ function toSnake(obj: any): any {
 }
 
 async function fetchApi(path: string, options?: RequestInit) {
+    const apiKey = process.env.DP_API_KEY;
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options?.headers as Record<string, string> || {}),
+    };
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
     const res = await fetch(`${API_BASE_URL}${path}`, {
         ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...(options?.headers || {})
-        }
+        headers,
     });
 
     if (!res.ok) {
