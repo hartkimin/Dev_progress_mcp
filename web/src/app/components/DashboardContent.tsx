@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useTransition, useState } from 'react';
 import ProjectActions from './ProjectActions';
 import { useTranslation } from '@/lib/i18n';
-import type { ProjectSummary } from '@/lib/db';
+import type { ProjectSummary, StrategyReadiness } from '@/lib/db';
+import StrategyReadinessSection from './StrategyReadiness';
 import { createProjectAction } from '@/app/actions';
 import { AlertTriangle, TrendingUp, Clock } from 'lucide-react';
 
@@ -307,7 +308,7 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
     );
 }
 
-export default function DashboardContent({ projectSummaries }: { projectSummaries: ProjectSummary[] }) {
+export default function DashboardContent({ projectSummaries, strategyReadiness }: { projectSummaries: ProjectSummary[]; strategyReadiness?: StrategyReadiness | null }) {
     const { t } = useTranslation();
 
     return (
@@ -325,6 +326,8 @@ export default function DashboardContent({ projectSummaries }: { projectSummarie
 
             <section>
                 <VibeAlertPanel projects={projectSummaries} />
+
+                <StrategyReadinessSection data={strategyReadiness ?? null} />
 
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
                     <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">

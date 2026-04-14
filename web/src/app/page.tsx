@@ -1,17 +1,23 @@
 import DashboardContent from './components/DashboardContent';
 import AutoRefresh from './components/AutoRefresh';
 
-import { getAllProjectSummaries, ProjectSummary } from '@/lib/db';
+import { getAllProjectSummaries, getStrategyReadiness, ProjectSummary, StrategyReadiness } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Dashboard() {
   let projectSummaries: ProjectSummary[] = [];
+  let strategyReadiness: StrategyReadiness | null = null;
   try {
     projectSummaries = await getAllProjectSummaries();
   } catch (e) {
     // Fallback: API may not be available yet
     console.error('Failed to fetch project summaries:', e);
+  }
+  try {
+    strategyReadiness = await getStrategyReadiness();
+  } catch (e) {
+    console.error('Failed to fetch strategy readiness:', e);
   }
 
   return (
@@ -23,7 +29,7 @@ export default async function Dashboard() {
       <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-400/20 dark:bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute top-20 -left-20 w-72 h-72 bg-indigo-400/20 dark:bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
-      <DashboardContent projectSummaries={projectSummaries} />
+      <DashboardContent projectSummaries={projectSummaries} strategyReadiness={strategyReadiness} />
     </main>
   );
 }
