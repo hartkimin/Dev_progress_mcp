@@ -16,6 +16,7 @@ import VibePhaseDashboard from './VibePhaseDashboard';
 import { useTranslation } from '@/lib/i18n';
 import YCQuestionsView from './planReview/YCQuestionsView';
 import PlanReviewHub from './planReview/PlanReviewHub';
+import PlanReviewBadges from './planReview/PlanReviewBadges';
 import {
     LayoutDashboard, Calendar, Bug, BarChart3,
     Box, Database, FileJson,
@@ -128,6 +129,17 @@ export default function ProjectViewsContainer({
                     })}
                 </div>
             </div>
+
+            {/* Plan review badge strip — shown above the active view for relevant phases */}
+            {activeCategory === 'ideation' && (
+                <PlanReviewBadges projectId={projectId} kinds={['ceo', 'design']} />
+            )}
+            {activeCategory === 'design' && (
+                <PlanReviewBadges projectId={projectId} kinds={['eng', 'design']} />
+            )}
+            {activeCategory === 'deploy' && (
+                <PlanReviewBadges projectId={projectId} kinds={['devex']} />
+            )}
 
             {/* 📋 프로젝트 */}
             {view === 'kanban' && (

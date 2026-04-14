@@ -10,7 +10,10 @@ import { listPlanReviews } from '@/app/actions/planReviewActions';
 type Kind = 'ceo' | 'eng' | 'design' | 'devex';
 const KINDS: Kind[] = ['ceo', 'eng', 'design', 'devex'];
 
-interface Props { projectId: string; }
+interface Props {
+    projectId: string;
+    kinds?: Array<'ceo' | 'eng' | 'design' | 'devex'>;
+}
 
 interface Row {
     kind: Kind;
@@ -18,7 +21,7 @@ interface Row {
     created_at: string;
 }
 
-export default function PlanReviewBadges({ projectId }: Props) {
+export default function PlanReviewBadges({ projectId, kinds }: Props) {
     const [latestByKind, setLatestByKind] = useState<Map<Kind, Row>>(new Map());
 
     useEffect(() => {
@@ -39,9 +42,13 @@ export default function PlanReviewBadges({ projectId }: Props) {
         return () => { cancelled = true; };
     }, [projectId]);
 
+    const activeKinds = kinds ?? KINDS;
+
+    if (activeKinds.length === 0) return null;
+
     return (
         <div className="flex flex-wrap gap-2 text-xs">
-            {KINDS.map((k) => {
+            {activeKinds.map((k) => {
                 const r = latestByKind.get(k);
                 const label = `${k.toUpperCase()}${r?.score != null ? `: ${r.score}/10` : ''}`;
                 const cls = r

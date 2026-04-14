@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { getPhaseBreakdown } from '@/lib/db';
 import type { PhaseBreakdownItem } from '@/lib/db';
 import { CheckCircle2, Clock, Loader2, Lightbulb, PenTool, Code2, TestTube2, Rocket } from 'lucide-react';
-import PlanReviewBadges from './planReview/PlanReviewBadges';
 
 const PHASE_CONFIG: { name: string; icon: React.ReactNode; color: string; gradient: string; emoji: string }[] = [
     { name: 'Ideation & Requirements', icon: <Lightbulb className="w-5 h-5" />, color: 'bg-indigo-500', gradient: 'from-indigo-500 to-indigo-600', emoji: '💡' },
@@ -56,8 +55,6 @@ export default function VibePhaseDashboard({ projectId }: { projectId: string })
                         {overallRate}%
                     </span>
                 </div>
-                {/* Plan review score badges — T12 */}
-                <PlanReviewBadges projectId={projectId} />
                 <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-indigo-500 via-emerald-500 to-cyan-500 rounded-full transition-all duration-1000" style={{ width: `${overallRate}%` }} />
                 </div>
