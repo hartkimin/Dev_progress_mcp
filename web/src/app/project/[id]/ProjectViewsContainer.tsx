@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Task } from '@/lib/db';
 import KanbanBoardClient from './KanbanBoardClient';
 import CalendarViewClient from './CalendarViewClient';
@@ -61,7 +62,19 @@ export default function ProjectViewsContainer({
     projectId: string,
     projectName: string
 }) {
-    const [view, setView] = useState<ViewType>('kanban');
+    const searchParams = useSearchParams();
+    const VALID_VIEWS: ReadonlyArray<ViewType> = [
+        'kanban', 'calendar', 'issue_tracker', 'kpi', 'phase_tracker',
+        'yc_questions', 'plan_review_hub',
+        'architecture', 'database', 'api_spec',
+        'code_review', 'test', 'environment', 'deploy',
+        'ai_context', 'decision', 'changelog',
+    ];
+    const urlView = searchParams.get('view');
+    const initialView: ViewType = (urlView && VALID_VIEWS.includes(urlView as ViewType))
+        ? (urlView as ViewType)
+        : 'kanban';
+    const [view, setView] = useState<ViewType>(initialView);
     const { t } = useTranslation();
 
     const tabs: { key: ViewType; label: string; icon: React.ReactNode; category: CategoryKey }[] = [

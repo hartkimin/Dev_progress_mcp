@@ -8,12 +8,13 @@ export function setAccessToken(token: string | null) {
 }
 
 function toSnake(obj: any): any {
+    if (obj instanceof Date) return obj;
     if (Array.isArray(obj)) return obj.map(toSnake);
     if (obj !== null && typeof obj === 'object') {
         const out: any = {};
         for (const k in obj) {
             const snakeKey = k.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-            out[snakeKey] = obj[k];
+            out[snakeKey] = toSnake(obj[k]);
         }
         if (out._count && out._count.comments !== undefined) {
             out.comment_count = out._count.comments;
