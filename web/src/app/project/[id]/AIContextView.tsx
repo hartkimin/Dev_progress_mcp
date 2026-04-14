@@ -5,7 +5,6 @@ import { fetchProjectDocument } from '@/app/actions/documentActions';
 import { useTranslation } from '@/lib/i18n';
 import { Brain, Clock, FileText, Bot, ChevronDown, ChevronUp, AlertTriangle, Cpu, FolderOpen, MessageSquare } from 'lucide-react';
 import EmptyStatePrompt from '@/components/EmptyStatePrompt';
-import PlanReviewHistory from './planReview/PlanReviewHistory';
 
 interface AIContext {
     id: string; taskTitle: string; model: string; createdAt: string;
@@ -140,8 +139,6 @@ export default function AIContextView({ projectId }: { projectId: string }) {
                     </div>
                 </>
             )}
-            {/* Plan review history — T13 */}
-            <PlanReviewHistory projectId={projectId} />
         </div>
     );
 }
