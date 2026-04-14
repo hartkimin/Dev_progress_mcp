@@ -348,6 +348,12 @@ export async function restoreProjectDocumentVersionDb(projectId: string, docType
 
 // ─── Analytics API ───────────────────────────────────────────────
 
+export interface PhaseProgress {
+    phase: string;
+    total: number;
+    done: number;
+}
+
 export interface ProjectSummary {
     id: string;
     name: string;
@@ -363,6 +369,7 @@ export interface ProjectSummary {
         dominant_phase: string;
         last_activity: string | null;
     };
+    phase_progress?: PhaseProgress[];
 }
 
 export interface PhaseBreakdownItem {
@@ -489,4 +496,25 @@ export async function listPlanReviews(projectId: string, kind?: string): Promise
 
 export async function getPlanReview(id: string): Promise<PlanReview | null> {
     return await fetchApi(`/plan-reviews/${id}`);
+}
+
+export interface StrategyReadinessProject {
+    id: string;
+    name: string;
+    yc_completion_rate: number;
+    plan_review_avg_score: number | null;
+    plan_review_count_by_kind: { ceo: number; eng: number; design: number; devex: number };
+    phase_progress: PhaseProgress[];
+}
+
+export interface StrategyReadiness {
+    projects: StrategyReadinessProject[];
+    aggregate: {
+        yc_completion_rate: number;
+        plan_review_avg_score: number | null;
+    };
+}
+
+export async function getStrategyReadiness(): Promise<StrategyReadiness> {
+    return await fetchApi('/analytics/strategy-readiness');
 }
