@@ -14,15 +14,19 @@ import DeploymentView from './DeploymentView';
 import AIContextView from './AIContextView';
 import VibePhaseDashboard from './VibePhaseDashboard';
 import { useTranslation } from '@/lib/i18n';
+import YCQuestionsView from './planReview/YCQuestionsView';
+import PlanReviewHub from './planReview/PlanReviewHub';
 import {
     LayoutDashboard, Calendar, Bug, BarChart3,
     Box, Database, FileJson,
     GitPullRequest, TestTube2, Server, Rocket,
-    Brain, Lightbulb, FileText, Workflow
+    Brain, Lightbulb, FileText, Workflow,
+    Sparkles, ClipboardList,
 } from 'lucide-react';
 
 type ViewType =
     | 'kanban' | 'calendar' | 'issue_tracker' | 'kpi' | 'phase_tracker'
+    | 'yc_questions' | 'plan_review_hub'
     | 'architecture' | 'database' | 'api_spec'
     | 'code_review' | 'test' | 'environment' | 'deploy'
     | 'ai_context' | 'decision' | 'changelog';
@@ -67,7 +71,9 @@ export default function ProjectViewsContainer({
         { key: 'phase_tracker', label: 'Phases',             icon: <Workflow className="w-4 h-4" />,        category: 'overview' },
         { key: 'ai_context',    label: t('tabAIContext'),    icon: <Brain className="w-4 h-4" />,           category: 'overview' },
         { key: 'decision',      label: t('tabDecision'),     icon: <Lightbulb className="w-4 h-4" />,       category: 'overview' },
-        // 💡 Ideation — populated in Task 9 (yc_questions, plan_review_hub)
+        // 💡 Ideation
+        { key: 'yc_questions',    label: t('tabYcQuestions'),   icon: <Sparkles className="w-4 h-4" />,      category: 'ideation' },
+        { key: 'plan_review_hub', label: t('tabPlanReviewHub'), icon: <ClipboardList className="w-4 h-4" />, category: 'ideation' },
         // 🏗️ Design
         { key: 'architecture',  label: t('tabArchitecture'), icon: <Box className="w-4 h-4" />,             category: 'design' },
         { key: 'database',      label: t('tabDatabase'),     icon: <Database className="w-4 h-4" />,        category: 'design' },
@@ -138,6 +144,14 @@ export default function ProjectViewsContainer({
             )}
             {view === 'phase_tracker' && (
                 <VibePhaseDashboard projectId={projectId} />
+            )}
+
+            {/* 💡 Ideation */}
+            {view === 'yc_questions' && (
+                <YCQuestionsView projectId={projectId} />
+            )}
+            {view === 'plan_review_hub' && (
+                <PlanReviewHub projectId={projectId} />
             )}
 
             {/* 🏗️ 설계 */}
